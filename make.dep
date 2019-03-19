@@ -1,0 +1,112 @@
+CC=$(DC_CROSS_PREFIX)gcc
+LD=$(DC_CROSS_PREFIX)ld
+AR=$(DC_CROSS_PREFIX)ar
+NM=$(DC_CROSS_PREFIX)nm
+STRIP=$(DC_CROSS_PREFIX)strip
+OBJCOPY=$(DC_CROSS_PREFIX)objcopy
+OBJDUMP=$(DC_CROSS_PREFIX)objdump
+RANLIB=$(DC_CROSS_PREFIX)ranlib
+
+# Compile flags
+CFLAGS += -Wall -Os
+
+# Get all source to object
+OBJS_O = $(patsubst %.c,%.o,$(wildcard *.c))
+EXCLUDE_OBJS = $(patsubst %.c,%.o,$(EXCLUDE_FILE))
+OBJS = $(filter-out $(EXCLUDE_OBJS), $(OBJS_O))
+
+# Share library subname
+ifeq (${shell uname -o}, Cygwin)
+	SHARESUB=.dll
+	LIBPATH=/bin
+	EXTFLAGS =
+else
+	SHARESUB=.so
+	LIBPATH=/lib
+	EXTFLAGS = -fpic -shared
+endif
+
+OUTPUT ?= ${shell pwd | sed 's/.*\///g'}
+INC_SHARELIBS += libssl.so libcrypto.so
+
+# make target for all
+ifeq ($(MODE), share)
+	target = $(OUTPUT)$(SHARESUB) install_share
+else ifeq ($(MODE), static)
+	target = $(OUTPUT).a
+else ifeq ($(MODE), exe)
+	target = $(OUTPUT)
+else
+	target = 
+endif
+
+-include $(OBJS:.o=.d)
+
+all: $(OBJS) $(EXTOBJS) subdir $(target)
+
+subdir:
+	@if [ "$(DIRS)" != "" ]; then \
+		for dir in $(DIRS); do make -C $$dir all || exit 1; done \
+	fi
+
+install_share:
+	@if [ ! -d $(LD_PATH) ]; then \
+		mkdir -p $(LD_PATH) || exit 1; \
+	fi
+	cp -f lib$(OUTPUT)$(SHARESUB) $(LD_PATH)
+
+clean:
+	rm -f *.o *.a
+	rm -f *$(SHARESUB)
+	@if [ -f "$(OUTPUT)" ]; then rm -f $(OUTPUT); fi
+	rm -f .depend
+	rm -f *.d
+	@if [ "$(DIRS)" != "" ]; then \
+		for dir in $(DIRS); do make -C $$dir clean || exit 1; done \
+	fi
+
+depend dep: .depend
+
+install:
+	@if [ -f $(OUTPUT) ]; then \
+		cp -f $(OUTPUT) $(INSTALL_PATH)/bin; \
+	fi
+	@if [ ! -d $(INSTALL_PATH)/lib ]; then mkdir -p $(INSTALL_PATH)/lib || exit 1; fi
+	@if [ -f lib$(OUTPUT)$(SHARESUB) ]; then cp -f lib$(OUTPUT)$(SHARESUB) $(INSTALL_PATH)$(LIBPATH); fi
+	@if [ "$(DIRS)" != "" ]; then \
+		for dir in $(DIRS); do make -C $$dir install || exit 1; done \
+	fi
+
+#
+# Transition rules
+#
+.SUFFIXES:
+.SUFFIXES: .c .o .so .a
+
+# Include depend file
+	#@if [ -f .depend ]; then \
+	#	sinclude .depend; \
+	#fi
+
+
+%.a: $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS) || exit 1;
+	$(RANLIB) $@ || exit;
+
+%$(SHARESUB): $(OBJS)
+	$(CC) -shared -o lib$*$(SHARESUB) $(OBJS) $(INCLUDE) -L$(LD_PATH) $(subst .so,,$(subst lib,-l, $(INC_SHARELIBS))) $(INC_STATICLIBS) || exit 1;
+	
+.c.o:
+	$(CC) $(EXTFLAGS) -c -MD $(CFLAGS) $(INCLUDE) $< -o $@ || exit 1;
+	cp -f $*.d $*.d.tmp
+	sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	  sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	rm -f $*.d.tmp
+
+$(OUTPUT): $(OBJS) $(INC_STATICLIBS)
+	@if [ "$(OBJS)" != "" ]; then \
+		$(CC) $(INCLUDE) $(CFLAGS) $(OBJS) -o $@ -L$(LD_PATH) $(subst .so,,$(subst lib,-l, $(INC_SHARELIBS))) $(INC_STATICLIBS) || exit 1; \
+	fi
+
+.depend: $(wildcard *.c)
+	$(CC) $(INCLUDE) -M $(CFLAGS) *.c > .depend
