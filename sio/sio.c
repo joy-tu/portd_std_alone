@@ -68,9 +68,9 @@
 #ifdef SUPPORT_INTERNAL_UART
 #define SERIAL_PROC_FILE        "/proc/tty/driver/ttymxc"
 #endif // SUPPORT_INTERNAL_UART
-
+#define SUPPORT_EXTERNAL_UART
 #ifdef SUPPORT_EXTERNAL_UART
-#define D_MONITOR_INFO_PORT     "/dev/ttyM32"
+#define D_MONITOR_INFO_PORT     "/dev/tty"
 #endif // SUPPORT_EXTERNAL_UART
 
 struct __port_map {
@@ -105,13 +105,13 @@ int sio_errno;
 static PortInfo GPortInfo;
 
 static int uart_buffer_size;
+static char port_buf[32];
 
 #ifdef CROSS
 static char* __get_port_node_name(int port)
 {
     _port_map_t p;
 
-    static char port_buf[32];
 
     port--;
     if( (port < 0) || (port > NUMBER_OF_PORTS()) )
@@ -123,12 +123,13 @@ static char* __get_port_node_name(int port)
     {
 #ifdef SUPPORT_INTERNAL_UART
     case SERIAL_PORT_INTERNAL_FLAG:
-        sprintf(port_buf, "/dev/ttymxc%d", p->portno);
+        sprintf(port_buf, "/dev/ttyUSB%d", p->portno);
         break;
 #endif // SUPPORT_INTERNAL_UART
 #ifdef SUPPORT_EXTERNAL_UART
     case SERIAL_PORT_EXTERNAL_FLAG:
-        sprintf(port_buf, "/dev/ttyM%d", p->portno);
+        sprintf(port_buf, "/dev/ttyUSB%d", p->portno);
+        printf("open /dev/ttyUSB%d \r\n", p->portno);
         break;
 #endif // SUPPORT_EXTERNAL_UART
     default:
@@ -183,13 +184,14 @@ int sio_open(int port)
 
     if ((ptr = getPort(port)) == NULL)
         return SIO_BADPORT;
-
+        printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 #ifdef CROSS
     fname = __get_port_node_name(port);
+        printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     if(fname == NULL)
         return SIO_BADPORT;
 #else
-    fname = "/dev/ttyr01";
+    fname = "/dev/ttyUSB0";
 #endif
 
     if ((ptr->fd=open(fname, O_RDWR | O_NOCTTY)) < 0)
@@ -200,7 +202,11 @@ int sio_open(int port)
 	/* bugfix for sending break when startup under 485-2W */
     inter = Scf_getIfType(port);
     sio_setiftype(port, inter);
+#ifndef CROSS
+    uart_buffer_size = 2048;
+#else
     ioctl(ptr->fd, MOXA_GET_WRITEROOM, &uart_buffer_size);
+#endif
 
 
     fcntl(ptr->fd, F_SETFL, FNDELAY);       /* Set nonblocking mode */
@@ -301,7 +307,7 @@ int sio_ioctl(int port, int baud, int mode)
      * Get the current options for the port...
      */
     tcgetattr(ptr->fd, &options);
-
+    printf("+sio_ioctl(), c_cflag=0x%x\n", options.c_cflag);
     /*
      * Set the baud rates
      */
@@ -397,7 +403,7 @@ int sio_ioctl(int port, int baud, int mode)
     /*
      * Set the new options for the port...
      */
-    //printf("sio_ioctl(), c_cflag=0x%x\n", options.c_cflag);
+    printf("-sio_ioctl(), c_cflag=0x%x\n", options.c_cflag);
     tcsetattr(ptr->fd, TCSANOW, &options);
 
 	if (baudrate == -1)	/* set any baudrate */
@@ -446,7 +452,7 @@ int sio_flowctrl(int port, int mode)
      */
     tcgetattr(ptr->fd, &options);
 
-//printf("CRTSCTS = [0x%x], c_cflag=%d\n", CRTSCTS, options.c_cflag);
+printf("CRTSCTS = [0x%x], c_cflag=0x%x\n", CRTSCTS, options.c_cflag);
     /*
      * Disable hardware/software flow control
      */
@@ -462,7 +468,7 @@ int sio_flowctrl(int port, int mode)
     /*
      * Set the new options for the port...
      */
-//printf("sio_flowctrl(), c_cflag=0x%x\n", options.c_cflag);
+    printf("sio_flowctrl(), c_cflag=0x%x\n", options.c_cflag);
     tcsetattr(ptr->fd, TCSANOW, &options);
     return SIO_OK;
 }
@@ -1491,6 +1497,7 @@ static int _sio_getExternalSioData(int port, SIODATA *siodata)
     int fd;
     struct mxser_mon_ext mon_ext_data;
     int charmode=0;
+    return SIO_OK;
 
     p = _getPortMap(port);
 
@@ -1590,6 +1597,7 @@ long sio_ofree(int port)
 static int _sio_getExtPortStatus(int port, _port_status_ext_t ext_status)
 {
     int fd;
+    return 0;
 
 
     fd = open(D_MONITOR_INFO_PORT, O_RDWR);

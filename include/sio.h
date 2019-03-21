@@ -9,7 +9,7 @@
 #define _SIO_H
 
 #ifndef CROSS
-#define MAX_PORTS           1
+#define MAX_PORTS           4
 #else
 #if defined(imx_EVB)
 #define MAX_PORTS           1

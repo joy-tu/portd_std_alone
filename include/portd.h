@@ -13,7 +13,7 @@
 
 #define DISABLE_LINUX_SYN_BACKLOG 1
 
-#define DSPORTD_PID_FILE "/var/run/devsvr/portd%02d.pid"
+#define DSPORTD_PID_FILE "run/portd%02d.pid"
 
 #define PORTD_USER_LEN  56
 #define MAX_CONNECT     8

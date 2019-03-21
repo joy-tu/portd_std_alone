@@ -51,7 +51,7 @@
 #endif
 
 
-//#define _DEBUG
+#define _DEBUG
 
 #ifdef _DEBUG
 #define PORTD_DBG printf
@@ -97,7 +97,7 @@ void sigusr1_handler(int sig)
 void sighup_handler(int sig)
 {
     int save_errno = errno;
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     portd_received_sighup = 1;
     signal(SIGHUP, sighup_handler);
     signal(SIGQUIT, sighup_handler);
@@ -122,7 +122,7 @@ static void sighup_restart(int port_idx)
     portd_received_sighup = 0;
 
     portd_setexitflag(port_idx, 1);
-	sys_send_events(EVENT_ID_OPMODE_RESTART, port_idx << 4);
+//	sys_send_events(EVENT_ID_OPMODE_RESTART, port_idx << 4);
   	port_buffering_reset(port_idx);
 
 }
@@ -205,7 +205,9 @@ int main(int argc, char *argv[])
         portd_terminate = 0;
         portd_received_sighup = 0;
 		portd(port_idx);
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
         portd_exit(port_idx);
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     }
 
     return 0;
@@ -251,11 +253,13 @@ static int portd_init(int port_idx)
                     return 0;
                 memset(ptr->detail, 0, sizeof(struct aspp_serial));
             }
+#if 0
             else if (ptr->application == CFG_OPMODE_RFC2217) // RFC2217
             {
                 PORTD_DBG("%s(), RFC2217\n", __FUNCTION__);
                 delimiter_init(port_idx, 1, 0);
             }
+#endif
             break;
         }
         case CFG_APPLICATION_SOCKET:
@@ -269,6 +273,7 @@ static int portd_init(int port_idx)
                     return 0;
                 memset(ptr->detail, 0, sizeof(struct aspp_serial));
             }
+#if 0
             else if (ptr->application == CFG_OPMODE_TCPCLIENT) // TCP Client
             {
                 PORTD_DBG("%s(), TCP client\n", __FUNCTION__);
@@ -288,9 +293,10 @@ static int portd_init(int port_idx)
                     return 0;
                 memset(ptr->detail, 0, sizeof(RAW_UDP_SERIAL));
             }
+#endif
             break;
         }
-
+#if 0
         case CFG_APPLICATION_PAIR_CONNECTION:
         {
         	delimiter_init(port_idx, 0, 1);
@@ -321,6 +327,7 @@ static int portd_init(int port_idx)
             break;
 		}
 #endif			
+#endif
         default:
             return 0;
             break;
@@ -363,13 +370,15 @@ static void portd(int port_idx)
             if (ptr->application == CFG_OPMODE_REALCOM) // RealCOM
             {
                 PORTD_DBG("%s(), RealCOM\n", __FUNCTION__);
-                pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx);
+                PORTD_DBG("pthread_create = %d \n", pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx));
             }
+#if 0            
             else if (ptr->application == CFG_OPMODE_RFC2217) // RFC2217
             {
                 PORTD_DBG("%s(), RFC2217\n", __FUNCTION__);
                 pthread_create(&ptr->thread_id, NULL, &rfc2217_start, (void *)port_idx);
             }
+#endif
             break;
         }
         case CFG_APPLICATION_SOCKET:
@@ -379,6 +388,7 @@ static void portd(int port_idx)
                 PORTD_DBG("%s(), TCP server\n", __FUNCTION__);
                 pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)(port_idx|0x8000));
             }
+#if 0
             else if (ptr->application == CFG_OPMODE_TCPCLIENT) // TCP Client
             {
                 PORTD_DBG("%s(), TCP client\n", __FUNCTION__);
@@ -416,6 +426,7 @@ static void portd(int port_idx)
         case CFG_APPLICATION_DISABLED:      // Disabled
         {
             PORTD_DBG("%s(), disabled\n", __FUNCTION__);
+#endif
             break;
         }
 #ifdef SUPPORT_RTERMINAL_MODE
@@ -443,13 +454,13 @@ static void portd(int port_idx)
             portd_terminate = 1;
             if(ptr->thread_id)
                 pthread_join(ptr->thread_id, NULL);
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 #ifdef SUPPORT_SERCMD
             Gscm_active = 0;
             Gscm_online = 0;
             pthread_join(ptr->thread_scm_id, NULL);
 #endif
             sighup_restart(port_idx);
-            PORTD_DBG("portd return: port = %d\n", port_idx);
             return;
         }
         sleep(1);                    /* always sleep */

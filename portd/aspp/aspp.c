@@ -348,7 +348,7 @@ void *aspp_start(void* arg)
     int is_driver;
     int port;
     int i;
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 	is_driver = ((int)arg & 0x8000) ? 0 : 1;
     port = (int)arg & ~0x8000;
 
@@ -362,13 +362,13 @@ void *aspp_start(void* arg)
 	detail->backlog = Scf_getMaxConns(port);
 #endif
     detail->ctrlflag = 0;
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     if (Scf_getSkipJamIP(port))
         detail->ctrlflag |= CTRLFLAG_SKIPJAM;
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     if (Scf_getAllowDrvCtrl(port))
         detail->ctrlflag |= CTRLFLAG_ALLOWDRV;
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     if (!is_driver)	/* TCP Server Mode */
         Scf_getTcpServer(port, (u_short *) &detail->data_port_no, (u_short *) &detail->cmd_port_no);
     else
@@ -381,10 +381,10 @@ void *aspp_start(void* arg)
 
     /* Command Port */
     aspp_open_cmd_listener(detail);
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     /* Data Port */
     aspp_open_data_listener(detail);
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 	if (port_buffering_active(port))
 	{
 		aspp_open_serial(port);
@@ -396,16 +396,19 @@ void *aspp_start(void* arg)
 	{
 		/* open/close serial port so that serial settings monitor web page can 
 		show setting values instead of default values */
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 		aspp_open_serial(port);
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 		sio_close(port);
 		sio_DTR(port, 0);		 	/* DTR off */
 		sio_RTS(port, 0);			/* RTS off */
 	}
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     while (1)
     {
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
         aspp_main(port, is_driver);
-
+printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 		port_buffering_check_restart(port);
 
         for (i=0; i<detail->backlog; i++)
@@ -997,6 +1000,8 @@ system("rm -f /var/log/debug");
 
                     if ((j = recv(detail->fd_cmd[i], cmdbuf, CMD_LEN, 0)) > 0)
                     {
+                        if(j==6)
+                            printf("0x%x 0x%x 0x%x\r\n",cmdbuf[0],cmdbuf[1],cmdbuf[2]);
 						if (detail->serial_flag)
                             if ((j = aspp_command(port, i, cmdbuf, j)) > 0)
                                 send(detail->fd_cmd[i], cmdbuf, j, 0);
@@ -1267,15 +1272,18 @@ int aspp_command(int port, int conn, char *buf, int len)
 
 #ifdef DISABLE_LINUX_SYN_BACKLOG
     realtty = ((detail->backlog-1) > 1)? 0 : 1;
+printf("==sk== %s:%d realtty = %d\r\n", __FUNCTION__, __LINE__, realtty);
 #else
     realtty = (detail->backlog > 1)? 0 : 1;
 #endif
 
+printf("==sk== %s:%d len = %d\r\n", __FUNCTION__, __LINE__, len);
     i = 0;
     rsp = 0;
     while (i < len)
     {
         cmd = buf[i++];
+printf("+=sk== %s:%d cmd = 0x%x\r\n", __FUNCTION__, __LINE__, cmd);
         if (i >= len)
             break;
         datalen = buf[i++];
@@ -1285,11 +1293,13 @@ int aspp_command(int port, int conn, char *buf, int len)
         notify = 0;
         tmp = &buf[i];
 
+printf("++sk== %s:%d cmd = 0x%x\r\n", __FUNCTION__, __LINE__, cmd);
         switch (cmd)
         {
         case D_ASPP_CMD_IOCTL:
             if (datalen == 2)
             {
+printf("==sk== %s:%d \r\n",__FUNCTION__,__LINE__);
                 if (realtty || (detail->ctrlflag & CTRLFLAG_ALLOWDRV))
                 {
                     int ioctl_baud, ioctl_mode;
@@ -1309,6 +1319,7 @@ int aspp_command(int port, int conn, char *buf, int len)
                 {
                     int fctrl_mode;
                     fctrl_mode = aspp_convert_flow((int) tmp[0], (int) tmp[1], (int) tmp[2], (int) tmp[3]);
+printf("==sk== %s:%d fctrl_mode = 0x%x\r\n",__FUNCTION__,__LINE__,fctrl_mode);
                     sio_flowctrl(port, fctrl_mode);
                 }
                 setok = 1;
@@ -1875,7 +1886,7 @@ int aspp_accept_data(int port)
                 delimiter_start(port, detail->fd_port, detail->backlog, detail->fd_data, detail->data_sent, aspp_sendfunc, aspp_recvfunc, 1);
             }
 
-			sys_send_events(EVENT_ID_OPMODE_CONNECT, port << 4);
+//			sys_send_events(EVENT_ID_OPMODE_CONNECT, port << 4);
 
             on = 1;
             setsockopt(detail->fd_data[i], IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
@@ -2043,7 +2054,7 @@ void aspp_close_data(int port, int index)
     detail->fd_data[index] = -1;
     memset(&detail->peer[index], '\0', sizeof(struct sockaddr_in));
 
-	sys_send_events(EVENT_ID_OPMODE_DISCONNECT, port << 4);
+//	sys_send_events(EVENT_ID_OPMODE_DISCONNECT, port << 4);
 
     //@@ add by Kevin
     Gaspp_socket_stat[port-1][index].remote_ip = 0;
@@ -2076,8 +2087,10 @@ int aspp_open_serial(int port)
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
 
-    while ((detail->fd_port = sio_open(port)) < 0)
+    while ((detail->fd_port = sio_open(port)) < 0){
+        printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
         usleep(100000);
+    }
 
     sio_DTR(port, 0);             /* DTR off at init state */
     sio_RTS(port, 0);             /* RTS off at init state */
