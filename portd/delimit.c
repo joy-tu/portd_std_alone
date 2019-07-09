@@ -313,7 +313,7 @@ void buffering_offline_read(int port)
 }
 
 /* called by pair.c for buffering without delimiter */
-int fd_net_pair;
+int fd_net_pair = 0;
 int buffering_sio_read(int port, char *buf, int len)
 {
 	int n, do_buffering = 0;
@@ -1026,7 +1026,6 @@ int delimiter_write_1(int port)
 	if (n > ofree)
             n = ofree;
 
-    TRACE(("==sk== %s:%d n = %d ofree = %d \r\n",__FUNCTION__,__LINE__,n,ofree));
 	if (n > 0)
 	{
 	    if ((n2 = dp->sio_write(port, (char*)p, n)) > 0)
@@ -1189,7 +1188,7 @@ int delimiter_recv(int port, int fd_net)
 	dp = (fdkparam_t) Gdktab;
 	if ((dp->flag & DK_RUN) == 0)
 		return 0;
-TRACE(("port=%d,n=%d,len=%d,cndx=%d,rndx=%d,wndx=%d,cflag=%d\r\n", dp->port, n, dp->s2e_len, dp->s2e_cndx, dp->s2e_rndx, dp->s2e_wndx, dp->s2e_cflag));
+
 	if (dp->e2s_len >= DK_BUFFER_SIZE_E2S)
 	{
 		delimiter_write(port);

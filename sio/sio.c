@@ -65,6 +65,8 @@
 #define	MOXA_SET_SPECIAL_BAUD_RATE	(MOXA + 0x64)
 #define	MOXA_GET_SPECIAL_BAUD_RATE	(MOXA + 0x65)
 
+#define TTY_NAME "/dev/ttyr00"
+
 #ifdef SUPPORT_INTERNAL_UART
 #define SERIAL_PROC_FILE        "/proc/tty/driver/ttymxc"
 #endif // SUPPORT_INTERNAL_UART
@@ -123,7 +125,7 @@ static char* __get_port_node_name(int port)
     {
 #ifdef SUPPORT_INTERNAL_UART
     case SERIAL_PORT_INTERNAL_FLAG:
-        sprintf(port_buf, "/dev/ttyUSB%d", p->portno);
+        sprintf(port_buf, "/dev/ttyr0%d", p->portno);
         break;
 #endif // SUPPORT_INTERNAL_UART
 #ifdef SUPPORT_EXTERNAL_UART
@@ -191,7 +193,7 @@ int sio_open(int port)
     if(fname == NULL)
         return SIO_BADPORT;
 #else
-    fname = "/dev/ttyUSB0";
+    fname = TTY_NAME;
 #endif
 
     if ((ptr->fd=open(fname, O_RDWR | O_NOCTTY)) < 0)

@@ -157,6 +157,8 @@ int Scf_getInactivityTime(int port)
 //----------------------------------------------------------------
 int Scf_getTcpServer(int port, u_short *dataport, u_short *cmdport)
 {
+    *dataport = TCPSERV_BASE_PORT+port;
+	*cmdport  = 965 + port;
 	return TCPSERV_BASE_PORT+port;
 }
 

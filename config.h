@@ -4,7 +4,11 @@
 #define SERMODE   3 // 8N1
 #define FLOW_CTRL 1 //RTS/CTS
 #define INTERFACE 0 //RS-232
+#if 0
 #define OPMODE    256 //realcom
+#else
+#define OPMODE    512 //tcp server
+#endif
 #define MAX_CONN  1
 #define SKIPJAMIP 0
 #define ALLOWDRV 0

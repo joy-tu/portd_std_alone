@@ -225,10 +225,6 @@ static int portd_init(int port_idx)
 
     val = (int) Scf_getOpMode(ptr->port_idx);
 
-#ifndef CROSS
-    val = 256; // RealCOM mode
-#endif // CROSS
-
     ptr->opmode = val & 0xff00;
     ptr->application = val & 0xff;
 
