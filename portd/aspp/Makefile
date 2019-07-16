@@ -9,7 +9,7 @@ MODE=static
 # Include library
 ##################################
 # include share library
-INC_SHARELIBS = libconfig.so libsio.so libsystem.so 
+INC_SHARELIBS =
 # include static library
 INC_STATICLIBS = 
 

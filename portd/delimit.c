@@ -25,7 +25,7 @@
 #include <delimit.h>
 #include <sio.h>
 #include <datalog.h>
-#include "aspp/aspp.h"
+#include "aspp.h"
 #include <sys/shm.h>
 #include <sys/sem.h>
 

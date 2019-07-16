@@ -11,7 +11,7 @@ MODE=exe
 ##################################
 # include share library
 #INC_SHARELIBS = libpwd.so libconfig.so libsio.so libsystem.so libssl.so libcrypto.so libupgradeFirmware.so
-INC_SHARELIBS = libsio.so libsystem.so
+# INC_SHARELIBS = libsystem.so
 # include static library
 #INC_STATICLIBS = rfc2217/rfc2217.a aspp/aspp.a raw_tcp/raw_tcp.a udp/udp.a
 #INC_STATICLIBS += pair/pair.a

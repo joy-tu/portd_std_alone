@@ -1,9 +1,6 @@
 
 include ./make.conf
-DIRS = sio system portd
-#DIRS = wireless_tools.29 pwd sio system config portd goahead/LINUX eventd console sds_dscid miscd ipconf_chk lstatusd ssl_init serialconsole telnet_6000 wlan_insmod bridge bridge_cmd wlan_logd dio_burnind adv_diod modbus_slaved chk_mmc wlan_scan led_tool
-#DIRS += mtconnect/agent/lib/libxml2 #Decomment this line when you want to build.
-#DIRS += mtconnect mtconnect/agent/src mtconnect/adapter internal_test_tool
+DIRS = portd
 
 DIRS += $(SUBLIBS)
 

@@ -27,7 +27,7 @@ else
 endif
 
 OUTPUT ?= ${shell pwd | sed 's/.*\///g'}
-INC_SHARELIBS += libssl.so libcrypto.so
+INC_SHARELIBS += 
 
 # make target for all
 ifeq ($(MODE), share)

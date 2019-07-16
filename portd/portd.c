@@ -35,8 +35,7 @@
 #include <sysapi.h>
 #include <rfc2217.h>
 #include <pair.h>
-#include "aspp/aspp.h"
-#include "raw_tcp/raw_tcp.h"
+#include "aspp.h"
 #include "udp/raw_udp.h"
 #include <support.h>
 #include <datalog.h>
@@ -150,10 +149,14 @@ int main(int argc, char *argv[])
     else
     {
         int opt;
-        while( (opt = getopt(argc, argv, "p:d") ) != -1 )
+        while( (opt = getopt(argc, argv, "f:p:d") ) != -1 )
         {
             switch (opt)
             {
+                case 'f':
+                    printf("%s:%d\n",__func__,__LINE__);
+                    config_parser(optarg);
+                    break;
                 case 'p':
                     port_idx = atoi(optarg);
                     if (port_idx > MAX_PORTS)
@@ -170,6 +173,8 @@ int main(int argc, char *argv[])
             }
         }
     }
+
+    load_runtime_conf();
 
 	if (port_idx <= 0)
     {

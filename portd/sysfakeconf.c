@@ -45,7 +45,7 @@ int Scf_getAsyncIoctl(int port, int *baud, int *mode, int *flow)
 //      <0 -> fail;
 //----------------------------------------------------------------
 int Scf_getAsyncFifo(int port){
-	return FLOW_CTRL;
+	return FIFO;
 }
 
 //----------------------------------------------------------------
@@ -157,9 +157,15 @@ int Scf_getInactivityTime(int port)
 //----------------------------------------------------------------
 int Scf_getTcpServer(int port, u_short *dataport, u_short *cmdport)
 {
+#if 1
+	*dataport = TCPSERV_BASE_PORT;
+	*cmdport  = TCPSERV_CMDB_PORT;
+	return 0;
+#else
     *dataport = TCPSERV_BASE_PORT+port;
 	*cmdport  = 965 + port;
 	return TCPSERV_BASE_PORT+port;
+#endif
 }
 
 
