@@ -38,11 +38,13 @@
 #include <linux/reboot.h>
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
+#if 0
 #include <openssl/ts.h>
 #include <openssl/x509.h>
 #include <openssl/objects.h>
 #include <openssl/asn1.h>
 #include <openssl/ossl_typ.h>
+#endif
 #include <aptypes.h>
 #include <config.h>
 #include <sysapi.h>
