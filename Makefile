@@ -1,3 +1,4 @@
+SHELL := /bin/bash # Use bash syntax
 
 include ./make.conf
 DIRS = portd
