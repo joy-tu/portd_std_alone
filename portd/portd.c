@@ -224,6 +224,7 @@ static int portd_init(int port_idx)
 {
     struct port_data *ptr;
     int val;
+    int ret;
 
     ptr = &Gport;
     ptr->port_idx = port_idx;
@@ -234,6 +235,12 @@ static int portd_init(int port_idx)
     ptr->application = val & 0xff;
 
     ptr->detail = NULL;
+
+    if ((ret = mx_uart_init()) < 0) {
+        fprintf(stderr, "Error: Initialize Moxa uart control library failed(ErrCode: %d).\n", ret);
+        exit(EXIT_FAILURE);
+    }
+
 
     // A quick open port to make /proc/tty/driver/ttymxc return
     // correct information after boot up the first time.

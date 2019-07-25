@@ -42,7 +42,7 @@ ifdef DC_USERDISK_PATH
 CFLAGS += -Werror -fno-strict-aliasing 
 endif
 
-CFLAGS += $(MAKE_SUPPORT_FLAG)
+CFLAGS += $(MAKE_SUPPORT_FLAG) -D$(TARGET_MODEL)
 
 TOP = ${shell pwd}
 LIBPATH=$(TOP)/target/lib

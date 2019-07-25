@@ -36,6 +36,7 @@
 #include <sio.h>
 #include <portd.h>
 #include <support.h>
+#include <moxa/mx_uart.h>
 #include "../debug.h"
 
 #ifdef SUPPORT_SERCMD
@@ -1352,6 +1353,7 @@ int sio_getiftype(int port)
         return SIO_BADPORT;
 
     ioctl(ptr->fd, MOXA_GET_OP_MODE, &iftype);
+
     return iftype;
 }
 
@@ -1364,7 +1366,28 @@ int sio_setiftype(int port, int iftype)
     if( ptr->fd < 0 )
         return SIO_BADPORT;
 
+#ifdef MODEL_UC
+    int ret, uart_mode;
+
+    switch (iftype)
+    {
+        case 1: uart_mode = UART_MODE_RS422_RS485_4W;     break; /* RS422 */
+        case 2: uart_mode = UART_MODE_RS485_2W;           break; /* RS485-2W */
+        case 3: uart_mode = UART_MODE_RS422_RS485_4W;     break; /* RS485-4W */
+        case 0:
+        default: uart_mode = UART_MODE_RS232;             break; /* RS232 */
+    }
+
+    ret = mx_uart_set_mode(port - 1, uart_mode);
+    if (ret < 0) {
+        fprintf(stderr, "Failed to set UART port %d interface(ErrCode: %d).\n", port, ret);
+        exit(EXIT_FAILURE);
+    }
+
+#else
     ioctl(ptr->fd, MOXA_SET_OP_MODE, &iftype);
+#endif
+
     return SIO_OK;
 }
 

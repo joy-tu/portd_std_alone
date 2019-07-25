@@ -14,6 +14,14 @@
 
 struct portd_conf config_item[] =
 {
+	/* Serial communication paramters */
+	{"baud_rate",                 15,  0,         18       },
+	{"data_bits",                 8,   5,         8        },
+	{"stop_bits",                 1,   1,         2        },
+	{"parity",                    0,   0,         4        },
+	{"flow_control",              1,   0,         2        },
+	{"interface",                 0,   0,         3        },
+	/* OPmode settings */
 	{"tcp_alive_check_time",      7,   0,         99       },
 	{"inactivity_time",           0,   0,         65535    },
 	{"max_connection",            1,   1,         8        },
@@ -172,6 +180,14 @@ int load_item(char *name, int *val)
 }
 int load_runtime_conf(void)
 {
+	/* Serial communication paramters */
+	LOAD(baud_rate);
+	LOAD(data_bits);
+	LOAD(stop_bits);
+	LOAD(parity);
+	LOAD(flow_control);
+	LOAD(interface);
+	/* OPmode settings */
 	LOAD(tcp_alive_check_time);
 	LOAD(inactivity_time);
 	LOAD(max_connection);

@@ -1,4 +1,5 @@
 #include "../config.h"
+#include "sio.h"
 #include <header.h>
 
 int Scf_getMaxPorts(){
@@ -30,9 +31,44 @@ int Scf_getPortAliveCheck(int port)
 //----------------------------------------------------------------
 int Scf_getAsyncIoctl(int port, int *baud, int *mode, int *flow)
 {
+	/* 
+	 * termios.h doesn't have B7200 and
+	 * we also don't support user-defined baud rate.
+	 */
 	*baud = BAUD_IDX;
-	*mode = SERMODE;
+	if (*baud > 10)
+		++(*baud);
+
+	*mode = 0;
+	switch (DATABITS)
+	{
+		case 5: *mode |= BIT_5;  break;
+		case 6: *mode |= BIT_6;  break;
+		case 7: *mode |= BIT_7;  break;
+		case 8:
+		default: *mode |= BIT_8; break;
+	}
+
+
+	switch (STOPBITS)
+	{
+		case 2: *mode |= STOP_2;  break;
+		case 1:
+		default: *mode |= STOP_1; break;
+	}
+
+	switch (PARITY)
+	{
+		case 1: *mode |= P_ODD;   break;
+		case 2: *mode |= P_EVEN;  break;
+		case 3: *mode |= P_MRK;   break;
+		case 4: *mode |= P_SPC;   break;
+		case 0:
+		default: *mode |= P_NONE; break;
+	}
+
 	*flow = FLOW_CTRL;
+
 	return 0;
 }
 //----------------------------------------------------------------

@@ -9,6 +9,14 @@ struct portd_conf {
 };
 
 struct runtime_config {
+	/* Serial communication paramters */
+	int baud_rate;
+	int data_bits;
+	int stop_bits;
+	int parity;
+	int flow_control;
+	int interface;
+	/* OPmode settings */
 	int tcp_alive_check_time;
 	int inactivity_time;
 	int max_connection;
@@ -43,11 +51,13 @@ extern char Gtty_name[128];
 #define OPMODE_TCPSRV    512
 #define OPMODE_REALCOM   256
 
-#define FIFO                     1	// FIFO
-#define INTERFACE                0	// RS-232
-#define BAUD_IDX                 16	// 115200
-#define SERMODE                  3	// 8N1
-#define FLOW_CTRL                1	// RTS/CTS
+#define BAUD_IDX                 CFG(baud_rate)
+#define DATABITS                 CFG(data_bits)
+#define STOPBITS                 CFG(stop_bits)
+#define PARITY                   CFG(parity)
+#define FLOW_CTRL                CFG(flow_control)
+#define INTERFACE                CFG(interface)
+#define FIFO                     1
 #define RTSDTRACT                3
 #define SERDATALOG               0
 #define PORTBUFF                 0
