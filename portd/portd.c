@@ -40,6 +40,7 @@
 #include <support.h>
 #include <datalog.h>
 #include <eventd.h>
+#include "debug.h"
 
 #include <sys/types.h>          /* See NOTES */
 #include <sys/stat.h>          /* See NOTES */
@@ -144,7 +145,7 @@ int main(int argc, char *argv[])
     if( argc < 3 )
     {
         usage(argv[0]);
-        return(1);
+        exit(EXIT_FAILURE);
     }
     else
     {
@@ -154,18 +155,17 @@ int main(int argc, char *argv[])
             switch (opt)
             {
                 case 'f':
-                    printf("%s:%d\n",__func__,__LINE__);
-                    config_parser(optarg);
+                    if (config_parser(optarg) < 0)
+                        exit(EXIT_FAILURE);
+
                     break;
                 case 'p':
                     port_idx = atoi(optarg);
-                    if (port_idx > MAX_PORTS)
-                    {
-                        fprintf(stderr, "port index exceeds MAX_PORTS!\n");
-                        return 0;
-                    }
                     if (port_idx > Scf_getMaxPorts())
-                        return 0;
+                    {
+                        fprintf(stderr, "port index out of range!\n");
+                        exit(EXIT_FAILURE);
+                    }
                     break;
                 case 'd':
                     daemon = 0;
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 	if (port_idx <= 0)
     {
         fprintf(stderr, "Invalid port specified!\n");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     if( daemon )
@@ -215,7 +215,7 @@ printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     }
 
-    return 0;
+    exit(EXIT_SUCCESS);
 }
 
 

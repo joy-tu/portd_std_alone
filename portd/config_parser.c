@@ -4,109 +4,157 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
+#include "../debug.h"
 #include "../config.h"
 
 #define TMP_SIZE 2048
 #define ENABLE  1
 #define DISABLE 0
-char *config_buff;
+
 struct portd_conf config_item[] =
 {
-	{"tcp_alive_check_time",      7},
-	{"inactivity_time",           0},
-	{"max_connection",            1},
-	{"ignore_jammed_ip",    DISABLE},
-	{"allow_driver_control", ENABLE},
-	{"tcp_port",               4001},
-	{"cmd_port",                966},
-	{"packet_length",             0},
-	{"delimiter_1_en",      DISABLE},
-	{"delimiter_2_en",      DISABLE},
-	{"delimiter_1",               0},
-	{"delimiter_2",               0},
-	{"delimiter_process",         0},
-	{"force_transmit",            0},
-	{"", -1},
+	{"tcp_alive_check_time",      7,   0,         99       },
+	{"inactivity_time",           0,   0,         65535    },
+	{"max_connection",            1,   1,         8        },
+	{"ignore_jammed_ip",    DISABLE,   DISABLE,   ENABLE   },
+	{"allow_driver_control", ENABLE,   DISABLE,   ENABLE   },
+	{"tcp_port",               4001,   1,         65535    },
+	{"cmd_port",                966,   1,         65535    },
+	{"packet_length",             0,   0,         1024     },
+	{"delimiter_1_en",      DISABLE,   DISABLE,   ENABLE   },
+	{"delimiter_2_en",      DISABLE,   DISABLE,   ENABLE   },
+	{"delimiter_1",               0,   0,         255      },
+	{"delimiter_2",               0,   0,         255      },
+	{"delimiter_process",         0,   0,         3        },
+	{"force_transmit",            0,   0,         65535    },
+	{"",                         -1,  -1,         -1       },
 };
 
 struct runtime_config Grun_conf;
-char Gtty_name[128];
-int get_ttyname(void)
+char Gtty_name[128] = {0};
+static int get_ttyname(char *value, char *err_msg, size_t msg_size)
 {
-	char *ptr = strstr(config_buff, "tty_name");
-	char buf[128];
 	int tty;
 
-	if(ptr == NULL)
-	{
-		fprintf(stderr,"Doesn't found TTY config\n");
-		exit(1);
-	}
+	strncpy(Gtty_name, value, sizeof(Gtty_name) - 1);
 
-	sscanf(config_buff, "%s %s", buf, Gtty_name);
-
+	CONFIG_DEBUG("tty_name: %s\n", Gtty_name);
 	if((tty = open(Gtty_name, O_RDONLY)) < 0)
 	{
-		fprintf(stderr,"TTY error: cannot open the TTY device %s.\n", Gtty_name);
-		exit(1);
+		snprintf(err_msg, msg_size, "TTY error: cannot open the TTY device %s", Gtty_name);
+		return -1;
 	}
+
 	close(tty);
+
 	return 0;
 }
 
-int get_config(void)
+static int get_config(char *key, char* value, char *err_msg, size_t msg_size)
 {
 	int i;
+	char sval[20] = {0};
+	long li;
 
-	for(i = 0; i < sizeof(config_item)/sizeof(config_item[0]); i++)
+	if (strcmp(key, "tty_name") == 0)
 	{
-		char buf[sizeof(config_item[0].item_name)];
-		int val;
-		char *ptr = strstr(config_buff, config_item[i].item_name);
-
-		if(ptr == NULL)
-			continue;
-		//printf("+name: %s val: %d\n",buf, val);
-		sscanf(ptr, "%s %d", buf, &val);
-		//printf("-name: %s val: %d\n",buf, val);
-		config_item[i].val = val;
+		return get_ttyname(value, err_msg, msg_size);
 	}
-	for(i = 0; i < sizeof(config_item)/sizeof(config_item[0]); i++)
+
+	for (i = 0; strlen(config_item[i].item_name) > 0; i++)
 	{
-		if(strlen(config_item[i].item_name) == 0)
+		if (strcmp(key, config_item[i].item_name) == 0)
+		{
+			strncpy(sval, value, sizeof(sval) - 1);
 			break;
-		printf("=name: %s val: %d\n",
-			config_item[i].item_name, 
-			config_item[i].val);
+		}
 	}
-	return 1;
+
+	/* The key item is no use, ignore it. */
+	if (sval[0] == 0)
+	{
+		return 0;
+	}
+	
+	li = strtol(sval, NULL, 0);
+
+	/* Check value range */
+	if (errno == ERANGE ||
+		(li < config_item[i].min || li > config_item[i].max))
+	{
+		snprintf(err_msg, msg_size, "Value out of range, error at \"%s\"", config_item[i].item_name);
+		return -1;
+	}
+
+	config_item[i].val = (int)li;
+
+	return 0;
 }
 
 int config_parser(char *path)
 {
-	int ret = 0;
-	char *tmp;
-	FILE *config = fopen(path,"r+");
+	int line = 0;
+	int ret = -1;
+	char buff[TMP_SIZE];
+	const char *const delim = " \t\r\n";
+	char *saveptr = NULL;
+	char *key = NULL, *value = NULL;
+	char err_msg[128];
+	FILE *config;
 
-	if(config == NULL)
-		return 0;
+	CONFIG_DEBUG("********* Start parsing config file *********\n");
 
-	config_buff = (char *) malloc(TMP_SIZE);
-
-	if(config_buff == NULL)
-		return 0;
-
-	tmp = config_buff;
-	while((tmp = fgets(tmp, TMP_SIZE, config)))
+	if ((config = fopen(path, "r+")) == NULL)
 	{
-		tmp += strlen(tmp);
+		snprintf(err_msg, sizeof(err_msg), "Config file: %s not found", path);
+		goto EXIT;
 	}
-	//printf("%s", config_buff);
-	get_ttyname();
-	get_config();
-    ret = 1;
-	
-	free(config_buff);
+
+	while (fgets(buff, sizeof(buff), config))
+	{
+		++line;
+
+		if (buff[0] == '#')	// ignore comment
+			continue;
+
+		if ((key = strtok_r(buff, delim, &saveptr)) != NULL)
+			value = strtok_r(NULL, delim, &saveptr);
+
+		if (!key || !value)
+		{
+			snprintf(err_msg, sizeof(err_msg), "error at line %d", line);
+			goto EXIT;
+		}
+
+		if (get_config(key, value, err_msg, sizeof(err_msg)) < 0)
+		{
+			goto EXIT;
+		}
+	}
+
+    ret = 0;
+
+EXIT:
+	if (config)
+		fclose(config);
+
+	if (ret < 0)
+		fprintf(stderr, "[Fail to parse config file] %s.\n", err_msg);
+
+#if __CONFIG_DEBUG
+	int i;
+	for(i = 0; i < sizeof(config_item)/sizeof(config_item[0]); i++)
+	{
+		if(strlen(config_item[i].item_name) == 0)
+			break;
+
+		printf("name: %s val: %d\n", config_item[i].item_name, config_item[i].val);
+	}
+#endif
+
+	CONFIG_DEBUG("*********************************************\n");
+
 	return ret;
 }
 int load_item(char *name, int *val)
