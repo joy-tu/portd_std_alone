@@ -41,16 +41,16 @@ struct portd_conf config_item[] =
 
 struct runtime_config Grun_conf;
 char Gtty_name[128] = {0};
-static int get_ttyname(char *value, char *err_msg, size_t msg_size)
+int get_ttyname(int port)
 {
 	int tty;
 
-	strncpy(Gtty_name, value, sizeof(Gtty_name) - 1);
+	snprintf(Gtty_name, sizeof(Gtty_name), "/dev/ttyM%d", port -1);
 
 	CONFIG_DEBUG("tty_name: %s\n", Gtty_name);
 	if((tty = open(Gtty_name, O_RDONLY)) < 0)
 	{
-		snprintf(err_msg, msg_size, "TTY error: cannot open the TTY device %s", Gtty_name);
+		fprintf(stderr, "TTY error: cannot open the TTY device %s.\n", Gtty_name);
 		return -1;
 	}
 
@@ -64,11 +64,6 @@ static int get_config(char *key, char* value, char *err_msg, size_t msg_size)
 	int i;
 	char sval[20] = {0};
 	long li;
-
-	if (strcmp(key, "tty_name") == 0)
-	{
-		return get_ttyname(value, err_msg, msg_size);
-	}
 
 	for (i = 0; strlen(config_item[i].item_name) > 0; i++)
 	{

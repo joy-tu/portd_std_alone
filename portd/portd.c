@@ -132,7 +132,7 @@ static void usage(char *progname)
 {
     fprintf(stderr, "Usage: %s [options]\n", progname);
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -p port    serial port index (1~16)\n");
+    fprintf(stderr, "  -p port    serial port index\n");
 }
 
 
@@ -161,11 +161,9 @@ int main(int argc, char *argv[])
                     break;
                 case 'p':
                     port_idx = atoi(optarg);
-                    if (port_idx > Scf_getMaxPorts())
-                    {
-                        fprintf(stderr, "port index out of range!\n");
+                    if (get_ttyname(port_idx) < 0)
                         exit(EXIT_FAILURE);
-                    }
+
                     break;
                 case 'd':
                     daemon = 0;
@@ -210,9 +208,8 @@ int main(int argc, char *argv[])
         portd_terminate = 0;
         portd_received_sighup = 0;
 		portd(port_idx);
-printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
+
         portd_exit(port_idx);
-printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     }
 
     exit(EXIT_SUCCESS);
