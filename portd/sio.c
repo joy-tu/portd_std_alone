@@ -36,6 +36,7 @@
 #include <sio.h>
 #include <portd.h>
 #include <support.h>
+#include "../debug.h"
 
 #ifdef SUPPORT_SERCMD
 #include <scm.h>
@@ -310,7 +311,7 @@ int sio_ioctl(int port, int baud, int mode)
      * Get the current options for the port...
      */
     tcgetattr(ptr->fd, &options);
-    printf("+sio_ioctl(), c_cflag=0x%x\n", options.c_cflag);
+    SIO_DEBUG("+sio_ioctl(), c_cflag=0x%x\n", options.c_cflag);
     /*
      * Set the baud rates
      */
@@ -406,7 +407,7 @@ int sio_ioctl(int port, int baud, int mode)
     /*
      * Set the new options for the port...
      */
-    printf("-sio_ioctl(), c_cflag=0x%x\n", options.c_cflag);
+    SIO_DEBUG("-sio_ioctl(), c_cflag=0x%x\n", options.c_cflag);
     tcsetattr(ptr->fd, TCSANOW, &options);
 
 	if (baudrate == -1)	/* set any baudrate */
@@ -455,7 +456,7 @@ int sio_flowctrl(int port, int mode)
      */
     tcgetattr(ptr->fd, &options);
 
-printf("CRTSCTS = [0x%x], c_cflag=0x%x\n", CRTSCTS, options.c_cflag);
+    SIO_DEBUG("CRTSCTS = [0x%x], c_cflag=0x%x\n", CRTSCTS, options.c_cflag);
     /*
      * Disable hardware/software flow control
      */
@@ -471,7 +472,7 @@ printf("CRTSCTS = [0x%x], c_cflag=0x%x\n", CRTSCTS, options.c_cflag);
     /*
      * Set the new options for the port...
      */
-    printf("sio_flowctrl(), c_cflag=0x%x\n", options.c_cflag);
+    SIO_DEBUG("sio_flowctrl(), c_cflag=0x%x\n", options.c_cflag);
     tcsetattr(ptr->fd, TCSANOW, &options);
     return SIO_OK;
 }
