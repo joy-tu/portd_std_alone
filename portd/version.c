@@ -23,8 +23,8 @@ void sys_getVersionExt(int *main_ver, int *sub_ver, int *ext_ver)
 void sys_getVersionString(char *buf, int size)
 {
     if(VERSION_CV_BETA == 0)
-        snprintf(buf, size, "%d.%d Build %08d", VERSION_MAJOR, VERSION_MINOR, BUILD_DATE);
+        snprintf(buf, size, "Ver%d.%d Build %08d", VERSION_MAJOR, VERSION_MINOR, BUILD_DATE);
     else
-        snprintf(buf, size, "%d.%d.%d Build %08d", VERSION_MAJOR, VERSION_MINOR, VERSION_CV_BETA, BUILD_DATE);
+        snprintf(buf, size, "Ver%d.%d.%d Build %08d", VERSION_MAJOR, VERSION_MINOR, VERSION_CV_BETA, BUILD_DATE);
 }
 

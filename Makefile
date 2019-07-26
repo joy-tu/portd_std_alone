@@ -27,9 +27,9 @@ $(eval ${shell fgrep "MASTER_MAJOR=" $(DC_TOP)/profile/$(PROFILE)/BuildInfo.inc}
 $(eval ${shell fgrep "MASTER_MINOR=" $(DC_TOP)/profile/$(PROFILE)/BuildInfo.inc})
 $(eval ${shell fgrep "MASTER_CV_BETA=" $(DC_TOP)/profile/$(PROFILE)/BuildInfo.inc})
 else
-MASTER_MAJOR = 0
+MASTER_MAJOR = 1
 MASTER_MINOR = 0
-MASTER_CV_BETA = 1
+MASTER_CV_BETA = 0
 endif
 
 

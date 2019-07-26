@@ -51,7 +51,7 @@
 #endif
 
 
-#define _DEBUG
+//#define _DEBUG
 
 #ifdef _DEBUG
 #define PORTD_DBG printf
@@ -97,7 +97,7 @@ void sigusr1_handler(int sig)
 void sighup_handler(int sig)
 {
     int save_errno = errno;
-printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
+
     portd_received_sighup = 1;
     signal(SIGHUP, sighup_handler);
     signal(SIGQUIT, sighup_handler);
@@ -130,9 +130,12 @@ static void sighup_restart(int port_idx)
 
 static void usage(char *progname)
 {
-    fprintf(stderr, "Usage: %s [options]\n", progname);
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -p port    serial port index\n");
+    fprintf(stdout, "Usage: %s [options]\n", progname);
+    fprintf(stdout, "Options:\n");
+    fprintf(stdout, "Start TCP server mode for the specific port: -p \"port\"\n");
+    fprintf(stdout, "Input config file:                           -f \"config file\"\n");
+    fprintf(stdout, "Show software version:                       -v\n");
+    fprintf(stdout, "How to use this tool:                        -h\n");
 }
 
 
@@ -141,8 +144,9 @@ int main(int argc, char *argv[])
     extern char *optarg;
     int daemon=1;
     int port_idx=0;
+    char buf[30];
 
-    if( argc < 3 )
+    if( argc < 2 ) // at least include program name and option 
     {
         usage(argv[0]);
         exit(EXIT_FAILURE);
@@ -150,7 +154,7 @@ int main(int argc, char *argv[])
     else
     {
         int opt;
-        while( (opt = getopt(argc, argv, "f:p:d") ) != -1 )
+        while( (opt = getopt(argc, argv, "f:p:dvh") ) != -1 )
         {
             switch (opt)
             {
@@ -160,11 +164,25 @@ int main(int argc, char *argv[])
 
                     break;
                 case 'p':
+                    if (argc < 3)
+                    {
+                        usage(argv[0]);
+                        exit(EXIT_FAILURE);
+                    }
+
                     port_idx = atoi(optarg);
                     if (get_ttyname(port_idx) < 0)
                         exit(EXIT_FAILURE);
 
                     break;
+                case 'v':
+                    sys_getVersionString(buf, sizeof(buf));
+                    printf("%s\n", buf);
+
+                    exit(EXIT_SUCCESS);
+                case 'h':
+                    usage(argv[0]);
+                    exit(EXIT_SUCCESS);
                 case 'd':
                     daemon = 0;
                     break;
@@ -374,6 +392,7 @@ static void portd(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_REALCOM) // RealCOM
             {
+                printf("Start port %d as RealCOM mode\n", port_idx);
                 PORTD_DBG("%s(), RealCOM\n", __FUNCTION__);
                 PORTD_DBG("pthread_create = %d \n", pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx));
             }
@@ -390,6 +409,7 @@ static void portd(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_TCPSERVER) // TCP Server
             {
+                printf("Start port %d as TCP server mode\n", port_idx);
                 PORTD_DBG("%s(), TCP server\n", __FUNCTION__);
                 pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)(port_idx|0x8000));
             }
@@ -459,7 +479,7 @@ static void portd(int port_idx)
             portd_terminate = 1;
             if(ptr->thread_id)
                 pthread_join(ptr->thread_id, NULL);
-printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
+
 #ifdef SUPPORT_SERCMD
             Gscm_active = 0;
             Gscm_online = 0;

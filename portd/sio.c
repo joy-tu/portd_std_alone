@@ -189,10 +189,8 @@ int sio_open(int port)
 
     if ((ptr = getPort(port)) == NULL)
         return SIO_BADPORT;
-        printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
 #ifdef CROSS
     fname = __get_port_node_name(port);
-        printf("==sk== %s:%d\r\n",__FUNCTION__,__LINE__);
     if(fname == NULL)
         return SIO_BADPORT;
 #else
