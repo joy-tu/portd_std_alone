@@ -389,6 +389,13 @@ int delimiter_init(int port, int has_delimiter, int has_buffering)
     int shmid;
     key_t key;
 
+    /*
+     * We don't need shared memory now, because no data log is needed.
+     * When one of the processes using the same shared memory died,
+     * the other process will exit unexpectedly while using shared memory.
+     * If we need to support data log in the future, must fix this issue.
+     */
+#if 0
 	if (Gdktab == NULL)
 	{
 	    /*
@@ -421,10 +428,11 @@ int delimiter_init(int port, int has_delimiter, int has_buffering)
 		return 0;
 	    }
     }
-
-	//Gdktab = (fdkparam_t) malloc( sizeof(dkparam) );
-	//if( Gdktab == (fdkparam_t) NULL )
-		//return 0;
+#else
+	Gdktab = (fdkparam_t) malloc( sizeof(dkparam) );
+	if( Gdktab == (fdkparam_t) NULL )
+		return 0;
+#endif
 	dp = (fdkparam_t) Gdktab;
 	memset(dp, 0, sizeof(dkparam));
 
@@ -524,8 +532,8 @@ void delimiter_exit(int port)
         Gdktab->s2e_buf = NULL;
     }
 
-//	free(Gdktab);
-//	Gdktab = (fdkparam_t) NULL;
+	free(Gdktab);
+	Gdktab = (fdkparam_t) NULL;
 }
 
 void delimiter_start(int port, int fd_port, int max_conns, int fd_net[], int data_sent[],
