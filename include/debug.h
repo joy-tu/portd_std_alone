@@ -2,7 +2,32 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H
 
-#define DEBUG_W1    1
+
+#define __CONFIG_DEBUG    0
+#define __SIO_DEBUG       0
+#define __PORTD_DEBUG     0
+
+
+
+#if __CONFIG_DEBUG
+#	define CONFIG_DEBUG    printf
+#else
+#	define CONFIG_DEBUG(...)
+#endif
+
+#if __SIO_DEBUG
+#	define SIO_DEBUG       printf
+#else
+#	define SIO_DEBUG(...)
+#endif
+
+#if __PORTD_DEBUG
+#	define PORTD_DEBUG       printf
+#else
+#	define PORTD_DEBUG(...)
+#endif
+
+#define DEBUG_W1    0
 //#define DEBUG_GET_CONFIG	1
 
 #ifdef DEBUG_W1
