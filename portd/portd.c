@@ -225,6 +225,9 @@ int main(int argc, char *argv[])
                 PORTD_DEBUG("kill SIGTERM pid: %d\n", pid);
             }
 
+            /* Wait for the previous portd to release resources(ex. we can reuse TCP port). */
+            sleep(3);
+
             PORTD_DEBUG("process exist: pid: %d\n", pid);
         }
         else

@@ -55,14 +55,6 @@ int get_ttyname(int port)
 		return -1;
 	}
 
-	if (flock(tty, LOCK_EX | LOCK_NB) < 0)
-	{
-		SHOW_LOG(stderr, port, MSG_ERR, "The serial port %d has been opened.\n", port);
-		close(tty);
-
-		return -1;
-	}
-
 	close(tty);
 
 	return 0;
