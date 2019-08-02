@@ -5,7 +5,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#include "../debug.h"
+#include "debug.h"
+#include "../message.h"
 #include "../config.h"
 
 #define TMP_SIZE 2048
@@ -45,12 +46,20 @@ int get_ttyname(int port)
 {
 	int tty;
 
-	snprintf(Gtty_name, sizeof(Gtty_name), "/dev/ttyM%d", port -1);
+	snprintf(Gtty_name, sizeof(Gtty_name), "/dev/ttyM%d", port - 1);
 
 	CONFIG_DEBUG("tty_name: %s\n", Gtty_name);
 	if((tty = open(Gtty_name, O_RDONLY)) < 0)
 	{
-		fprintf(stderr, "TTY error: cannot open the TTY device %s.\n", Gtty_name);
+		SHOW_LOG(stderr, port, MSG_ERR, "Cannot open the TTY device \"%s\".\n", Gtty_name);
+		return -1;
+	}
+
+	if (flock(tty, LOCK_EX | LOCK_NB) < 0)
+	{
+		SHOW_LOG(stderr, port, MSG_ERR, "The serial port %d has been opened.\n", port);
+		close(tty);
+
 		return -1;
 	}
 
@@ -143,7 +152,7 @@ EXIT:
 		fclose(config);
 
 	if (ret < 0)
-		fprintf(stderr, "[Fail to parse config file] %s.\n", err_msg);
+		SHOW_LOG(stderr, -1, MSG_ERR, "Fail to parse config file(%s).\n", err_msg);
 
 #if __CONFIG_DEBUG
 	int i;
@@ -173,8 +182,9 @@ int load_item(char *name, int *val)
 	}
 	return -1;
 }
-int load_runtime_conf(void)
+int load_runtime_conf(int port)
 {
+	Grun_conf.port = port;
 	/* Serial communication paramters */
 	LOAD(baud_rate);
 	LOAD(data_bits);

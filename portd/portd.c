@@ -41,7 +41,7 @@
 #include <datalog.h>
 #include <eventd.h>
 #include "debug.h"
-
+#include "../message.h"
 #include <sys/types.h>          /* See NOTES */
 #include <sys/stat.h>          /* See NOTES */
 
@@ -138,7 +138,6 @@ static void usage(char *progname)
     fprintf(stdout, "How to use this tool:                        -h\n");
 }
 
-
 int main(int argc, char *argv[])
 {
     extern char *optarg;
@@ -190,11 +189,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    load_runtime_conf();
+    load_runtime_conf(port_idx);
 
 	if (port_idx <= 0)
     {
-        fprintf(stderr, "Invalid port specified!\n");
+        SHOW_LOG(stderr, -1, MSG_ERR, "Invalid port specified!\n");
         exit(EXIT_FAILURE);
     }
 
@@ -205,7 +204,8 @@ int main(int argc, char *argv[])
 
     while( 1 )
     {
-        sys_save_pid(port_idx, DSPORTD_PID_FILE);
+        if (sys_save_pid(port_idx, DSPORTD_PID_FILE) < 0)
+            exit(EXIT_FAILURE);
 
         /*
          * Arrange to restart on SIGHUP.  The handler needs
@@ -218,6 +218,7 @@ int main(int argc, char *argv[])
 #ifdef SUPPORT_SERCMD
         signal(SIGUSR1, sigusr1_handler);
 #endif
+
         if (!portd_init(port_idx))
         {
 			sleep(1);    /* sleep 1 second */
@@ -252,7 +253,7 @@ static int portd_init(int port_idx)
     ptr->detail = NULL;
 
     if ((ret = mx_uart_init()) < 0) {
-        fprintf(stderr, "Error: Initialize Moxa uart control library failed(ErrCode: %d).\n", ret);
+        SHOW_LOG(stderr, port_idx, MSG_ERR, "Initialize Moxa uart control library failed(ErrCode: %d).\n", ret);
         exit(EXIT_FAILURE);
     }
 
@@ -705,7 +706,8 @@ void tcp_setAliveTime(int port, int fd)
     /* enable/disable TCP alive check time */
     if(setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on)) < 0)
     {
-    	fprintf(stderr, "[Debug] %s, %d...error!\n", __FUNCTION__, __LINE__);
+        SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
+        exit(EXIT_FAILURE);
     }
 
     if(on == 1)
@@ -716,7 +718,8 @@ void tcp_setAliveTime(int port, int fd)
         if(alive < (16*60)) {
             if(setsockopt(fd, SOL_TCP, TCP_USER_TIMEOUT , &usertimeout, sizeof(int)) < 0)
             {
-                fprintf(stderr, "[Debug] %s, %d...error!\n", __FUNCTION__, __LINE__);
+                SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
+                exit(EXIT_FAILURE);
             }
         }
 #endif
@@ -761,19 +764,22 @@ void tcp_setAliveTime(int port, int fd)
 		// number of keep alive probe
         if(setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &cnt, sizeof(int)) < 0)
         {
-        	fprintf(stderr, "[Debug] %s, %d...error!\n", __FUNCTION__, __LINE__);
+            SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
+            exit(EXIT_FAILURE);
         }
 
 		// the keep alive time
         if(setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &idle, sizeof(int)) < 0)
         {
-			fprintf(stderr, "[Debug] %s, %d...error!\n", __FUNCTION__, __LINE__);
+            SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
+            exit(EXIT_FAILURE);
         }
 
 		// the interval between keep alive probes
         if(setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &intvl, sizeof(int)) < 0)
         {
-			fprintf(stderr, "[Debug] %s, %d...error!\n", __FUNCTION__, __LINE__);
+            SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
+            exit(EXIT_FAILURE);
         }
 
         //printf("TCP alive param(%d): cnt = %d, idle = %d, invtl = %d\r\n",

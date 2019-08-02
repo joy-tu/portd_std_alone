@@ -58,6 +58,9 @@
 #include <wlan_logd.h>
 #include <adv_diod.h>
 #include "ipc_cfg_api.h"
+#include "../message.h"
+#include "../config.h"
+
 
 #define ITEM_LEN 64
 #define AR6000_XIOCTL_WMI_GET_RD                        54 //ioctrl get country code
@@ -81,6 +84,8 @@ static char macbuf[18];
 
 static void _remove_comment(char* str);
 static void _trim_left_space(char* line);
+
+extern struct runtime_config Grun_conf;
 
 //
 // System API protection
@@ -178,7 +183,8 @@ u_int __sys_get_pid(char *filename)
 	
 	if ( (f = fopen(filename, "rb")) == NULL )
     {
-        fprintf(stderr, "Couldn't create pid file \"%s\": %s", filename, strerror(errno));
+        /* This file might not exist at first, don't show error message. */
+        //fprintf(stderr, "Couldn't create pid file \"%s\": %s", filename, strerror(errno));
     }
     else
     {
@@ -199,19 +205,20 @@ u_int sys_get_pid(int port, const char* pidfile)
     return pid;
 }
 
-void __sys_save_pid(char* filename)
+int __sys_save_pid(char* filename)
 {
     FILE *f;
     if ((f = fopen(filename, "wb")) == NULL)
     {
-        fprintf(stderr, "Couldn't create pid file \"%s\": %s", filename, strerror(errno));
+        SHOW_LOG(stderr, Grun_conf.port, MSG_ERR, "Couldn't create pid file \"%s\": %s.\n", filename, strerror(errno));
+        return -1;
     }
     else
     {
         fprintf(f, "%u\n", (u_int)getpid());
         fclose(f);
     }
-    return;
+    return 0;
 }
 
 /*
@@ -221,13 +228,12 @@ void __sys_save_pid(char* filename)
  * fail if there already is a daemon, and this will
  * overwrite any old pid in the file.
  */
-void sys_save_pid(int port, const char* pidfile)
+int sys_save_pid(int port, const char* pidfile)
 {
     char filename[256];
 
     sprintf(filename, pidfile, port);
-    __sys_save_pid(filename);
-    return;
+    return __sys_save_pid(filename);
 }
 
 

@@ -28,6 +28,7 @@
 #include "aspp.h"
 #include <sys/shm.h>
 #include <sys/sem.h>
+#include "../message.h"
 
 #define DK_FORCE_TX_SIZE  1024  /* force transmit if buffered data size exceeds this */
 
@@ -431,7 +432,10 @@ int delimiter_init(int port, int has_delimiter, int has_buffering)
 #else
 	Gdktab = (fdkparam_t) malloc( sizeof(dkparam) );
 	if( Gdktab == (fdkparam_t) NULL )
-		return 0;
+	{
+		SHOW_LOG(stderr, port, MSG_ERR, "Memory not enough.\n");
+		exit(EXIT_FAILURE);
+	}
 #endif
 	dp = (fdkparam_t) Gdktab;
 	memset(dp, 0, sizeof(dkparam));
@@ -467,9 +471,10 @@ int delimiter_init(int port, int has_delimiter, int has_buffering)
 	dp->s2e_buf = malloc(dp->s2e_size);
 	if ((dp->s2e_buf == NULL) && (dp->s2e_size > DK_BUFFER_SIZE_S2E))
 	{
-		printf("No memory for port %d buffering!\n", port);
+		SHOW_LOG(stderr, port, MSG_ERR, "No memory for port %d buffering!\n", port);
 		dp->s2e_size = DK_BUFFER_SIZE_S2E;
-		dp->s2e_buf = malloc(dp->s2e_size);
+		exit(EXIT_FAILURE);
+		//dp->s2e_buf = malloc(dp->s2e_size);
 	}
 
 	if((Scf_getMaxConns(port) > 1) && (Scf_getSkipJamIP(port) == 1))

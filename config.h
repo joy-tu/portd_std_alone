@@ -9,6 +9,7 @@ struct portd_conf {
 };
 
 struct runtime_config {
+	int port;
 	/* Serial communication paramters */
 	int baud_rate;
 	int data_bits;
@@ -41,7 +42,7 @@ extern char Gtty_name[128];
 	do{\
 		if(load_item(#name, &CFG(name)) < 0)\
 		{\
-			fprintf(stderr,"Invalid configuration %s !\n",#name);\
+			SHOW_LOG(stderr, Grun_conf.port, MSG_ERR, "Invalid configuration %s.\n", #name); \
 		}\
 	}while(0)
 

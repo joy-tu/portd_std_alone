@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <support.h>
 #include <eventd.h>
+#include "../message.h"
 
 #define TMP_LEN 	512
 #ifdef SUPPORT_SERCMD
@@ -85,8 +86,6 @@ char pattern_from_ser[2][65]={PATTERN_UPPER, PATTERN_LOWER};
 
 unsigned char pattern_old[256];
 #endif
-
-
 
 void check_to_net(int checklen, char* buf, int buflen)
 {
@@ -436,12 +435,16 @@ void aspp_open_data_listener(ASPP_SERIAL *detail)
 {
     int yes;
     struct sockaddr_in sin;
+    int port = Gport.port_idx;
 
     if (detail->fd_data_listen != -1)
         return;
 
-    while ((detail->fd_data_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-        usleep(100000);
+    if ((detail->fd_data_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error.\n", detail->data_port_no);
+        exit(EXIT_FAILURE);
+    }
 
 
     sin.sin_family = AF_INET;                       /* host byte order */
@@ -470,8 +473,11 @@ void aspp_open_data_listener(ASPP_SERIAL *detail)
     }
 */
     yes = 1;
-    while (setsockopt(detail->fd_data_listen, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
-        usleep(100000);
+    if (setsockopt(detail->fd_data_listen, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error.\n", detail->data_port_no);
+        exit(EXIT_FAILURE);
+    }
 
 #if 0
     /* TODO: set reuse port. */
@@ -480,27 +486,38 @@ void aspp_open_data_listener(ASPP_SERIAL *detail)
         usleep(100000);
 #endif
 
-    while (bind(detail->fd_data_listen, (struct sockaddr *) &sin, sizeof(sin)) == -1)
-        usleep(100000);
+    if (bind(detail->fd_data_listen, (struct sockaddr *) &sin, sizeof(sin)) == -1)
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error, please check if the port has been used.\n",
+                    detail->data_port_no);
+        exit(EXIT_FAILURE);
+    }
 
 #ifdef DISABLE_LINUX_SYN_BACKLOG
-	while (listen(detail->fd_data_listen, 1) == -1)
+	if (listen(detail->fd_data_listen, 1) == -1)
 #else
-	while (listen(detail->fd_data_listen, detail->backlog) == -1)
+	if (listen(detail->fd_data_listen, detail->backlog) == -1)
 #endif
-        usleep(100000);
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error.\n", detail->data_port_no);
+        exit(EXIT_FAILURE);
+    }
 }
 
 void aspp_open_cmd_listener(ASPP_SERIAL *detail)
 {
     int yes=1;
     struct sockaddr_in sin;
+    int port = Gport.port_idx;
 
     if (detail->fd_cmd_listen != -1)
         return;
 
-    while ((detail->fd_cmd_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-        usleep(100000);
+    if ((detail->fd_cmd_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error.\n", detail->cmd_port_no);
+        exit(EXIT_FAILURE);
+    }
 
     sin.sin_family = AF_INET;                       /* host byte order                  */
     sin.sin_port = htons((short)detail->cmd_port_no);      /* short, network byte order        */
@@ -517,8 +534,11 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
     }
 */
     yes = 1;
-    while (setsockopt(detail->fd_cmd_listen, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
-        usleep(100000);
+    if (setsockopt(detail->fd_cmd_listen, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error.\n", detail->cmd_port_no);
+        exit(EXIT_FAILURE);
+    }
 
 #if 0
     /*
@@ -530,15 +550,22 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
         usleep(100000);
 #endif
 
-    while (bind(detail->fd_cmd_listen, (struct sockaddr *) &sin, sizeof(sin)) == -1)
-        usleep(100000);
+    if (bind(detail->fd_cmd_listen, (struct sockaddr *) &sin, sizeof(sin)) == -1)
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error, please check if the port has been used.\n",
+                    detail->cmd_port_no);
+        exit(EXIT_FAILURE);
+    }
 
 #ifdef DISABLE_LINUX_SYN_BACKLOG
-	while (listen(detail->fd_cmd_listen, 1) == -1)
+	if (listen(detail->fd_cmd_listen, 1) == -1)
 #else
-	while (listen(detail->fd_cmd_listen, detail->backlog) == -1)
+	if (listen(detail->fd_cmd_listen, detail->backlog) == -1)
 #endif
-        usleep(100000);
+    {
+        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error.\n", detail->cmd_port_no);
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -2077,8 +2104,12 @@ int aspp_open_serial(int port)
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
 
-    while ((detail->fd_port = sio_open(port)) < 0)
-        usleep(100000);
+    if ((detail->fd_port = sio_open(port)) < 0)
+    {
+        SHOW_LOG(stderr, port, MSG_ERR,
+                    "Fail to open serial port %d, please check if the serial port has been opened.\n", port);
+        exit(EXIT_FAILURE);
+    }
 
     sio_DTR(port, 0);             /* DTR off at init state */
     sio_RTS(port, 0);             /* RTS off at init state */

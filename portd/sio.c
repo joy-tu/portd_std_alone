@@ -30,6 +30,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/file.h>
 #include <header.h>
 #include <debug.h>
 #include <config.h>
@@ -37,7 +38,7 @@
 #include <portd.h>
 #include <support.h>
 #include <moxa/mx_uart.h>
-#include "../debug.h"
+#include "../message.h"
 
 #ifdef SUPPORT_SERCMD
 #include <scm.h>
@@ -134,7 +135,7 @@ static char* __get_port_node_name(int port)
 #ifdef SUPPORT_EXTERNAL_UART
     case SERIAL_PORT_EXTERNAL_FLAG:
         sprintf(port_buf, "/dev/ttyUSB%d", p->portno);
-        printf("open /dev/ttyUSB%d \r\n", p->portno);
+        //printf("open /dev/ttyUSB%d \r\n", p->portno);
         break;
 #endif // SUPPORT_EXTERNAL_UART
     default:
@@ -202,6 +203,14 @@ int sio_open(int port)
         sio_errno = errno;
         return SIO_OPENFAIL;
     }
+
+    if (flock(ptr->fd, LOCK_EX | LOCK_NB)  < 0)
+    {
+        close(ptr->fd);
+
+        return SIO_OPENFAIL;
+    }
+
 	/* bugfix for sending break when startup under 485-2W */
     inter = Scf_getIfType(port);
     sio_setiftype(port, inter);
@@ -1378,7 +1387,7 @@ int sio_setiftype(int port, int iftype)
 
     ret = mx_uart_set_mode(port - 1, uart_mode);
     if (ret < 0) {
-        fprintf(stderr, "Failed to set UART port %d interface(ErrCode: %d).\n", port, ret);
+        SHOW_LOG(stderr, port, MSG_ERR, "Failed to set UART port %d interface(ErrCode: %d).\n", port, ret);
         exit(EXIT_FAILURE);
     }
 

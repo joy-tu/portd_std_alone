@@ -170,9 +170,9 @@ int sys_rx_xmodem(char *filename, char *filepath, int protocol);
 int sys_tx_xmodem(char *filename, int protocol);
 #endif
 u_int __sys_get_pid(char *filename);
-void __sys_save_pid(char* filename);
+int __sys_save_pid(char* filename);
 unsigned int sys_get_pid(int port, const char* pidfile);
-void sys_save_pid(int port, const char* pidfile);
+int sys_save_pid(int port, const char* pidfile);
 void sys_rm_pid(int port, const char* pidfile);
 int sys_daemon_init(void);
 int Ssys_getServerIp(char* host, unsigned long *inaddr, int timeout);
