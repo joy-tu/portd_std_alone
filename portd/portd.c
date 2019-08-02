@@ -144,6 +144,8 @@ int main(int argc, char *argv[])
     int daemon=1;
     int port_idx=0;
     char buf[30];
+    int ret;
+    u_int pid;
 
     if( argc < 2 ) // at least include program name and option 
     {
@@ -190,6 +192,46 @@ int main(int argc, char *argv[])
     }
 
     load_runtime_conf(port_idx);
+
+    pid = sys_get_pid(port_idx, DSPORTD_PID_FILE);
+    if (pid)
+    {
+        PORTD_DEBUG("get pid: %d\n", pid);
+        ret = kill(pid, 0);
+        /* The process exists, but permission is not enough. */
+        if (ret < 0 && errno == EPERM)
+        {
+            SHOW_LOG(stderr, port_idx, MSG_ERR,
+                        "Insufficient permission to restart portd, please use sudo or run as root to execute the program.\n");
+            exit(EXIT_FAILURE);
+        }
+        /* The process exists. */
+        if (ret == 0)
+        {
+            int retry_cnt = 50;
+            while (retry_cnt-- && kill(pid, SIGTERM) < 0)
+            {
+                usleep(100 * 1000L);
+            }
+
+            if (retry_cnt <= 0) // force to kill the process
+            {
+                PORTD_DEBUG("kill SIGKILL pid: %d\n", pid);
+
+                kill(pid, SIGKILL);
+            }
+            else
+            {
+                PORTD_DEBUG("kill SIGTERM pid: %d\n", pid);
+            }
+
+            PORTD_DEBUG("process exist: pid: %d\n", pid);
+        }
+        else
+        {
+            PORTD_DEBUG("process not exist: pid: %d\n", pid);
+        }
+    }
 
 	if (port_idx <= 0)
     {
