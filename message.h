@@ -4,6 +4,7 @@
 #include <string.h>
 #include <time.h>
 
+#define MSG_INFO    "Info"
 #define MSG_WARN    "Warn"
 #define MSG_ERR     "Error"
 

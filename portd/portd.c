@@ -128,9 +128,9 @@ static void sighup_restart(int port_idx)
 }
 
 
-static void usage(char *progname)
+static void usage()
 {
-    fprintf(stdout, "Usage: %s [options]\n", progname);
+    fprintf(stdout, "Usage: ./portd [options]\n");
     fprintf(stdout, "Options:\n");
     fprintf(stdout, "Start TCP server mode for the specific port: -p \"port\"\n");
     fprintf(stdout, "Input config file:                           -f \"config file\"\n");
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
                     break;
                 case 'v':
                     sys_getVersionString(buf, sizeof(buf));
-                    printf("%s\n", buf);
+                    fprintf(stdout, "%s\n", buf);
 
                     exit(EXIT_SUCCESS);
                 case 'h':
@@ -435,7 +435,7 @@ static void portd(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_REALCOM) // RealCOM
             {
-                printf("Start port %d as RealCOM mode\n", port_idx);
+                SHOW_LOG(stderr, port_idx, MSG_INFO, "Start port %d as RealCOM mode\n", port_idx);
                 PORTD_DBG("%s(), RealCOM\n", __FUNCTION__);
                 PORTD_DBG("pthread_create = %d \n", pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx));
             }
@@ -452,7 +452,7 @@ static void portd(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_TCPSERVER) // TCP Server
             {
-                printf("Start port %d as TCP server mode\n", port_idx);
+                SHOW_LOG(stderr, port_idx, MSG_INFO, "Start port %d as TCP server mode\n", port_idx);
                 PORTD_DBG("%s(), TCP server\n", __FUNCTION__);
                 pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)(port_idx|0x8000));
             }
