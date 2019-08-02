@@ -102,5 +102,13 @@ install:
 	done
 	chmod a+x $(INSTALL_PATH)/bin/*
 
+disk:
+	rm -rf portd*.tar.gz tmp/
+	mkdir -p tmp/portd
+	cp portd/portd tcp_srv.conf readme.txt version.txt tmp/portd
 
-
+ifeq ($(MASTER_CV_BETA), 0)
+		tar zcvf portd_ver$(MASTER_MAJOR).$(MASTER_MINOR)_build_$(DC_BUILD_DATE).tar.gz -C tmp portd
+else
+		tar zcvf portd_ver$(MASTER_MAJOR).$(MASTER_MINOR).$(MASTER_CV_BETA)_build_$(DC_BUILD_DATE).tar.gz -C tmp portd
+endif

@@ -1,0 +1,19 @@
+Product:    portd
+Version:    1.0 Build 19080217
+Date:       08/02/2019
+Company:    Moxa Inc.
+
+Support Platform: 
+-----------------
+Linux Armv7
+
+Supported Moxa Product: 
+-----------------------
+UC3111
+
+Release Note:
+-------------
+ver1.0 Build 19080217
+1. Newly released.
+   
+-End-
