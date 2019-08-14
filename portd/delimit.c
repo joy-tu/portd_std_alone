@@ -740,6 +740,7 @@ int delimiter_read_1(int port, int send_buffered_data)
 	unsigned char	*p;
 	dp = (fdkparam_t) Gdktab;
 	p = dp->s2e_buf + dp->s2e_wndx;
+
 	if ( dp->s2e_wndx >= dp->s2e_rndx )
 	{
 		max = dp->s2e_size - dp->s2e_wndx;
@@ -1109,7 +1110,6 @@ int delimiter_send(int port, int max, int strip)
     fdkparam_t      dp;
     unsigned char   *p;
     int	n, merged = 0;
-
     dp = (fdkparam_t) Gdktab;
 
 TRACE(("max=%d,strip=%d,sent_to_tcp_len=%d\n", max, strip, dp->sent_to_tcp_len));
@@ -1197,18 +1197,29 @@ int delimiter_recv(int port, int fd_net)
 	int		n, max;
 	fdkparam_t	dp;
 	unsigned char	*p;
+	int state;
 
 	dp = (fdkparam_t) Gdktab;
 	if ((dp->flag & DK_RUN) == 0)
 		return 0;
+
+	/*
+	 * Connection might has been reset by peer.
+	 * If don't check this, program will block because e2s_len is full. 
+	 */
+	state = tcp_state(fd_net);
+	if (state == 0)	// invalid
+	{
+		return -1;
+	}
 
 	if (dp->e2s_len >= DK_BUFFER_SIZE_E2S)
 	{
 		delimiter_write(port);
 		return dp->e2s_len;
 	}
-
 	p = dp->e2s_buf + dp->e2s_wndx;
+
 	if (dp->e2s_wndx >= dp->e2s_rndx)
 	{
 		max = DK_BUFFER_SIZE_E2S - dp->e2s_wndx;

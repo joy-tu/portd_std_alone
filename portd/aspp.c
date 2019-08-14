@@ -826,12 +826,12 @@ void aspp_main(int port, int is_driver)
                     {
                         if((detail->flag[ci] & FLAG_CMD_UP) && (detail->fd_data[ci] >= 0)) {
                             	aspp_close_cmd(port, ci);
-			}
+                        }
 
                         aspp_flush_data(port, detail->fd_port, detail->fd_data[ci], 2);
-			   if (detail->fd_data[ci] != -1){
+                        if (detail->fd_data[ci] != -1){
                         	aspp_close_data(port, ci);
-			   }
+                        }
                         sio_flush(port, FLUSH_ALL);
                         sio_fifo(port, Scf_getAsyncFifo(port));                   /* FIFO */                        
                     }
@@ -1067,19 +1067,16 @@ system("rm -f /var/log/debug");
 			
                     x = delimiter_recv(port, detail->fd_data[i]);
                     aspp_update_lasttime(port);
-
                     if (x < 0)
                     {
                         if (detail->flag[i] & FLAG_CMD_UP) {
-				if (detail->fd_cmd[i] != -1) {
-                            aspp_close_cmd(port, i);
-                        continue;
-					}
+				            if (detail->fd_cmd[i] != -1) {
+                                aspp_close_cmd(port, i);
+                            }
                         }
-			    if (detail->fd_data[i] != -1) {
-                        aspp_close_data(port, i);
-                        continue;
-			    	}
+                        if (detail->fd_data[i] != -1) {
+                            aspp_close_data(port, i);
+                        }
                         if (detail->connect_count == 0)
                             detail->finish = 1;
                     }
@@ -1269,7 +1266,6 @@ int aspp_recvfunc(int port, int fd_net, char *buf, int len)
     detail = (struct aspp_serial *) ptr->detail;
 
     nbytes = recv(fd_net, buf, len, 0);
-
     check_from_net(nbytes, buf, len);
 
     if (nbytes == -1)
@@ -1277,6 +1273,7 @@ int aspp_recvfunc(int port, int fd_net, char *buf, int len)
 
     if (nbytes == 0)
         return -1;
+
     return nbytes;
 }
 
