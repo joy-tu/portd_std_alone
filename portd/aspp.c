@@ -379,7 +379,9 @@ void *aspp_start(void* arg)
     detail->fd_cmd_listen = detail->fd_data_listen = -1;
 
     /* Command Port */
+#ifdef MAKE_SUPPORT_CMDPORT
     aspp_open_cmd_listener(detail);
+#endif
 
     /* Data Port */
     aspp_open_data_listener(detail);
@@ -1110,6 +1112,7 @@ system("rm -f /var/log/debug");
                 }
             }
         }
+
         if (FD_ISSET(detail->fd_port, &rfds))
         {
 #if 1

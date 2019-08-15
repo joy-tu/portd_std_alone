@@ -16,28 +16,28 @@
 struct portd_conf config_item[] =
 {
 	/* Serial communication paramters */
-	{"baud_rate",                 15,  0,         18       },
-	{"data_bits",                 8,   5,         8        },
-	{"stop_bits",                 1,   1,         2        },
-	{"parity",                    0,   0,         4        },
-	{"flow_control",              1,   0,         2        },
-	{"interface",                 0,   0,         3        },
+	{"baud_rate",                 15,  0,         18       , CONFIG_NONE},
+	{"data_bits",                 8,   5,         8        , CONFIG_NONE},
+	{"stop_bits",                 1,   1,         2        , CONFIG_NONE},
+	{"parity",                    0,   0,         4        , CONFIG_NONE},
+	{"flow_control",              1,   0,         2        , CONFIG_NONE},
+	{"interface",                 0,   0,         3        , CONFIG_NONE},
 	/* OPmode settings */
-	{"tcp_alive_check_time",      7,   0,         99       },
-	{"inactivity_time",           0,   0,         65535    },
-	{"max_connection",            1,   1,         8        },
-	{"ignore_jammed_ip",    DISABLE,   DISABLE,   ENABLE   },
-	{"allow_driver_control", ENABLE,   DISABLE,   ENABLE   },
-	{"tcp_port",               4001,   1,         65535    },
-	{"cmd_port",                966,   1,         65535    },
-	{"packet_length",             0,   0,         1024     },
-	{"delimiter_1_en",      DISABLE,   DISABLE,   ENABLE   },
-	{"delimiter_2_en",      DISABLE,   DISABLE,   ENABLE   },
-	{"delimiter_1",               0,   0,         255      },
-	{"delimiter_2",               0,   0,         255      },
-	{"delimiter_process",         0,   0,         3        },
-	{"force_transmit",            0,   0,         65535    },
-	{"",                         -1,  -1,         -1       },
+	{"tcp_alive_check_time",      7,   0,         99       , CONFIG_NONE},
+	{"inactivity_time",           0,   0,         65535    , CONFIG_NONE},
+	{"max_connection",            1,   1,         8        , CONFIG_USR_NOT_SET},
+	{"ignore_jammed_ip",    DISABLE,   DISABLE,   ENABLE   , CONFIG_USR_NOT_SET},
+	{"allow_driver_control", ENABLE,   DISABLE,   ENABLE   , CONFIG_USR_NOT_SET},
+	{"tcp_port",               4001,   1,         65535    , CONFIG_NONE},
+	{"cmd_port",                966,   1,         65535    , CONFIG_USR_NOT_SET},
+	{"packet_length",             0,   0,         1024     , CONFIG_USR_NOT_SET},
+	{"delimiter_1_en",      DISABLE,   DISABLE,   ENABLE   , CONFIG_USR_NOT_SET},
+	{"delimiter_2_en",      DISABLE,   DISABLE,   ENABLE   , CONFIG_USR_NOT_SET},
+	{"delimiter_1",               0,   0,         255      , CONFIG_USR_NOT_SET},
+	{"delimiter_2",               0,   0,         255      , CONFIG_USR_NOT_SET},
+	{"delimiter_process",         0,   0,         3        , CONFIG_USR_NOT_SET},
+	{"force_transmit",            0,   0,         65535    , CONFIG_USR_NOT_SET},
+	{"",                         -1,  -1,         -1       , CONFIG_NONE},
 };
 
 struct runtime_config Grun_conf;
@@ -68,6 +68,9 @@ static int get_config(char *key, char* value, char *err_msg, size_t msg_size)
 
 	for (i = 0; strlen(config_item[i].item_name) > 0; i++)
 	{
+		if (config_item[i].flags & CONFIG_USR_NOT_SET)
+			continue;
+
 		if (strcmp(key, config_item[i].item_name) == 0)
 		{
 			strncpy(sval, value, sizeof(sval) - 1);

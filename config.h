@@ -1,11 +1,17 @@
 #ifndef _BUILD_IN_CONF_
 #define _BUILD_IN_CONF_
 
+#include <stdint.h>
+
+#define CONFIG_NONE            0x0
+#define CONFIG_USR_NOT_SET     0x01	// user cannot set this config
+
 struct portd_conf {
 	char item_name[256];
 	int  val;
 	int  min;
 	int  max;
+	uint32_t flags;
 };
 
 struct runtime_config {
