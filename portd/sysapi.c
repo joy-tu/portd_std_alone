@@ -1761,3 +1761,80 @@ int escape_quote_in_string(char *str, char *new_buf, int new_buf_len)
 	}
 	return 0;
 }
+
+/*
+ * Return:
+ *  -1: system error.
+ *  -2: MAC address does not belong to MOXA.
+ */
+int lock_program_with_mac(void)
+{
+    struct ifreq ifr;
+    struct ifreq *it, *end;
+    struct ifconf ifc;
+    int sock;
+    char buf[1024];
+    unsigned char mac_address[6 + 1];
+    const char max_prefix[3] = {0x00, 0x90, 0xe8};
+    int ret = 0;
+
+    sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (sock == -1)
+    {
+        return -1;
+    }
+
+    ifc.ifc_len = sizeof(buf);
+    ifc.ifc_buf = buf;
+    if (ioctl(sock, SIOCGIFCONF, &ifc) < 0)
+    {
+        ret = -1;
+        goto EXIT;
+    }
+
+    it = ifc.ifc_req;
+    end = it + (ifc.ifc_len / sizeof(struct ifreq));
+    for (; it != end; ++it)
+    {
+        strcpy(ifr.ifr_name, it->ifr_name);
+        if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0)
+        {
+            if (!(ifr.ifr_flags & IFF_LOOPBACK))    // don't count loopback
+            {
+                if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0)
+                {
+                    memset(mac_address, 0, sizeof(mac_address));
+                    memcpy(mac_address, ifr.ifr_hwaddr.sa_data, 6);
+
+                    /*
+                    printf("[%s %d] interface: %s, mac: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                            __func__, __LINE__, ifr.ifr_name,
+                            mac_address[0], mac_address[1], mac_address[2],
+                            mac_address[3], mac_address[4], mac_address[5]);
+                    */
+
+                    if (memcmp(mac_address, max_prefix, sizeof(max_prefix)) != 0)
+                    {
+                        ret = -2;
+                        goto EXIT;
+                    }
+                }
+                else
+                {
+                    ret = -1;
+                    goto EXIT;
+                }
+            }
+        }
+        else
+        {
+            ret = -1;
+            goto EXIT;
+        }
+    }
+
+EXIT:
+    close(sock);
+
+    return ret;
+}

@@ -191,6 +191,18 @@ int main(int argc, char *argv[])
         }
     }
 
+    ret = lock_program_with_mac();
+    if (ret == -2)
+    {
+        SHOW_LOG(stderr, port_idx, MSG_ERR, "This software can only run on MOXA device.\n", port_idx);
+        exit(EXIT_FAILURE);
+    }
+    else if (ret == -1)
+    {
+        SHOW_LOG(stderr, port_idx, MSG_ERR, "Something wrong happened, please start portd again.\n", port_idx);
+        exit(EXIT_FAILURE);
+    }
+
     load_runtime_conf(port_idx);
 
     pid = sys_get_pid(port_idx, DSPORTD_PID_FILE);
@@ -226,6 +238,7 @@ int main(int argc, char *argv[])
             }
 
             /* Wait for the previous portd to release resources(ex. we can reuse TCP port). */
+            SHOW_LOG(stderr, port_idx, MSG_INFO, "Wait for restarting portd...\n", port_idx);
             sleep(3);
 
             PORTD_DEBUG("process exist: pid: %d\n", pid);
