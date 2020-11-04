@@ -26,7 +26,7 @@
 	#define NO_CUSTOM_MIB
 
 	#define NO_IPLOCATE
-	#define SUPPORT_SERCMD
+//	#define SUPPORT_SERCMD
 	#define SUPPORT_DIO
 	#define SUPPORT_DIOD
     #define SUPPORT_CONNECT_GOESDOWN

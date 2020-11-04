@@ -37,7 +37,7 @@
 #include <sio.h>
 #include <portd.h>
 #include <support.h>
-#include <moxa/mx_uart.h>
+//#include <moxa/mx_uart.h>
 #include "../message.h"
 
 #ifdef SUPPORT_SERCMD
@@ -134,7 +134,7 @@ static char* __get_port_node_name(int port)
 #endif // SUPPORT_INTERNAL_UART
 #ifdef SUPPORT_EXTERNAL_UART
     case SERIAL_PORT_EXTERNAL_FLAG:
-        sprintf(port_buf, "/dev/ttyUSB%d", p->portno);
+        sprintf(port_buf, "/dev/ttyMXUSB%d", p->portno);
         //printf("open /dev/ttyUSB%d \r\n", p->portno);
         break;
 #endif // SUPPORT_EXTERNAL_UART
@@ -213,7 +213,7 @@ int sio_open(int port)
 
 	/* bugfix for sending break when startup under 485-2W */
     inter = Scf_getIfType(port);
-    sio_setiftype(port, inter);
+//    sio_setiftype(port, inter);
 #ifndef CROSS
     uart_buffer_size = 2048;
 #else
@@ -1366,6 +1366,7 @@ int sio_getiftype(int port)
 
 int sio_setiftype(int port, int iftype)
 {
+#if 0
     PortInfo_t ptr;
 
     if( (ptr = getPort(port)) == NULL )
@@ -1394,7 +1395,7 @@ int sio_setiftype(int port, int iftype)
 #else
     ioctl(ptr->fd, MOXA_SET_OP_MODE, &iftype);
 #endif
-
+#endif
     return SIO_OK;
 }
 

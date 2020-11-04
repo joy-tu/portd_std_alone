@@ -537,6 +537,7 @@ void sys_setEventFlag(unsigned long old_ip)
  * \retval 0 Success.
  * \retval -1 Fail.
  */
+#if 0 
 int sys_send_events(int event_id, int context)
 {
     int qid, msgsz;
@@ -559,7 +560,7 @@ int sys_send_events(int event_id, int context)
 
     return 0;
 }
-
+#endif
 int sys_send_events_ex(int event_id, int context, unsigned long opmode, int ip, int port)
 {
     int qid, msgsz;

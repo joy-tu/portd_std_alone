@@ -184,7 +184,7 @@ char *sys_getGateway(char *ifname);
 int sys_getActiveProfile(void);
 void sys_setEventFlag(unsigned long old_ip);
 int sys_send_mtc_msg(int idx, int cond, char *tag, char *act, char *inact);
-int sys_send_events(int event_id, int context);
+//int sys_send_events(int event_id, int context);
 int sys_send_events_ex(int event_id, int context, unsigned long opmode, int ip, int port);
 void sys_reload_eventd();
 int sys_miscd_send(int event_id, int value);

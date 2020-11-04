@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
     char buf[30];
     int ret;
     u_int pid;
-
+printf("Joy %s-%d\r\n", __func__, __LINE__);
     if( argc < 2 ) // at least include program name and option 
     {
         usage(argv[0]);
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+#if 0
     ret = lock_program_with_mac();
     if (ret == -2)
     {
@@ -202,9 +202,9 @@ int main(int argc, char *argv[])
         SHOW_LOG(stderr, port_idx, MSG_ERR, "Something wrong happened, please start portd again.\n", port_idx);
         exit(EXIT_FAILURE);
     }
-
+#endif
     load_runtime_conf(port_idx);
-
+printf("Joy %s-%d\r\n", __func__, __LINE__);
     pid = sys_get_pid(port_idx, DSPORTD_PID_FILE);
     if (pid)
     {
@@ -254,9 +254,12 @@ int main(int argc, char *argv[])
         SHOW_LOG(stderr, -1, MSG_ERR, "Invalid port specified!\n");
         exit(EXIT_FAILURE);
     }
-
+printf("Joy %s-%d, stderr=%d\r\n", __func__, __LINE__, stderr);
     if( daemon )
         sys_daemon_init();
+SHOW_LOG(stderr, -1, "info", "Invalid port specified!\n");
+
+
 
 	log_init(port_idx);
 
@@ -309,12 +312,12 @@ static int portd_init(int port_idx)
     ptr->application = val & 0xff;
 
     ptr->detail = NULL;
-
+#if 0
     if ((ret = mx_uart_init()) < 0) {
         SHOW_LOG(stderr, port_idx, MSG_ERR, "Initialize Moxa uart control library failed(ErrCode: %d).\n", ret);
         exit(EXIT_FAILURE);
     }
-
+#endif
 
     // A quick open port to make /proc/tty/driver/ttymxc return
     // correct information after boot up the first time.
@@ -453,7 +456,7 @@ static void portd(int port_idx)
             {
                 SHOW_LOG(stderr, port_idx, MSG_INFO, "Start port %d as RealCOM mode\n", port_idx);
                 PORTD_DBG("%s(), RealCOM\n", __FUNCTION__);
-                PORTD_DBG("pthread_create = %d \n", pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx));
+		  pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx);
             }
 #if 0            
             else if (ptr->application == CFG_OPMODE_RFC2217) // RFC2217
@@ -472,45 +475,6 @@ static void portd(int port_idx)
                 PORTD_DBG("%s(), TCP server\n", __FUNCTION__);
                 pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)(port_idx|0x8000));
             }
-#if 0
-            else if (ptr->application == CFG_OPMODE_TCPCLIENT) // TCP Client
-            {
-                PORTD_DBG("%s(), TCP client\n", __FUNCTION__);
-                pthread_create(&ptr->thread_id, NULL, &raw_tcp_start, (void *)port_idx);
-            }
-            else if (ptr->application == CFG_OPMODE_UDP) // UDP
-            {
-                PORTD_DBG("%s(), UDP\n", __FUNCTION__);
-                pthread_create(&ptr->thread_id, NULL, &raw_udp_start, (void *)port_idx);
-            }
-            break;
-        }
-
-        case CFG_APPLICATION_PAIR_CONNECTION:
-        {
-            if (ptr->application == CFG_OPMODE_PAIR_MASTER) // Pair master
-            {
-                PORTD_DBG("%s(), pair master\n", __FUNCTION__);
-                pthread_create(&ptr->thread_id, NULL, &pair_master_start, (void *)port_idx);
-            }
-            else if (ptr->application == CFG_OPMODE_PAIR_SLAVE) // Pair slave
-            {
-                PORTD_DBG("%s(), pair slave\n", __FUNCTION__);
-                pthread_create(&ptr->thread_id, NULL, &pair_slave_start, (void *)port_idx);
-            }
-            break;
-        }
-        case CFG_APPLICATION_ETH_MODEM:     // Ethernet Modem
-        {
-            extern void *emodem_start(void* portno);
-            PORTD_DBG("%s(), ethernet modem\n", __FUNCTION__);
-            pthread_create(&ptr->thread_id, NULL, &emodem_start, (void *)port_idx);
-            break;
-        }
-        case CFG_APPLICATION_DISABLED:      // Disabled
-        {
-            PORTD_DBG("%s(), disabled\n", __FUNCTION__);
-#endif
             break;
         }
 #ifdef SUPPORT_RTERMINAL_MODE

@@ -69,7 +69,7 @@ extern char Gtty_name[128];
 #define SERDATALOG               0
 #define PORTBUFF                 0
 
-#define OPMODE                   OPMODE_TCPSRV
+#define OPMODE                   OPMODE_REALCOM
 #define TCP_ALIVE_MIN            CFG(tcp_alive_check_time)
 #define INACTTIME                CFG(inactivity_time)
 #define MAX_CONN                 CFG(max_connection)

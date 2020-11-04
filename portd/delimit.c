@@ -30,7 +30,7 @@
 #include <sys/sem.h>
 #include "../message.h"
 
-#define DK_FORCE_TX_SIZE  1024  /* force transmit if buffered data size exceeds this */
+#define DK_FORCE_TX_SIZE  DK_BUFFER_SIZE_S2E  /* force transmit if buffered data size exceeds this */
 
 #define min(a,b)  (((a) < (b)) ? (a) : (b))
 
@@ -536,8 +536,9 @@ void delimiter_exit(int port)
 		free(Gdktab->s2e_buf);
         Gdktab->s2e_buf = NULL;
     }
-
-	free(Gdktab);
+	if (Gdktab)
+		free(Gdktab);
+	
 	Gdktab = (fdkparam_t) NULL;
 }
 
@@ -612,7 +613,7 @@ void delimiter_start(int port, int fd_port, int max_conns, int fd_net[], int dat
 			break;
 #endif
 	}
-	sio_setiftype(port, iftype);
+//	sio_setiftype(port, iftype);
 }
 
 void delimiter_stop(int port)
@@ -669,8 +670,8 @@ int	delimiter_poll(int port)
 int delimiter_read(int port, int send_buffered_data)
 {
 	fdkparam_t	dp;
-	int n;
-	int retry_count=0;
+//	int n;
+//	int retry_count=0;
 	dp = (fdkparam_t) Gdktab;
 
 TRACE(("dp->flag: 0x%x, send_buffered_data: %d\r\n", dp->flag, send_buffered_data));
@@ -705,6 +706,7 @@ TRACE(("s2e_len: %d\r\n", dp->s2e_len));
 		}
 	}
 
+#if 0
 	if( dp->s2e_len == DK_BUFFER_SIZE_S2E && !(dp->flag & DK_DO_BUFFERING) )
 	{/* if DK_DO_BUFFERING, the following while loop will never break because no call
 		to port_buffering_tcp_is_clear() and thus dp->s2e_len will not be updated to 0 */
@@ -729,6 +731,7 @@ TRACE(("s2e_len: %d\r\n", dp->s2e_len));
 		while( dp->s2e_len != 0);
 
 	}
+#endif
 
 	return dp->del_read(port, send_buffered_data);
 }
@@ -739,6 +742,8 @@ int delimiter_read_1(int port, int send_buffered_data)
 	fdkparam_t	dp;
 	unsigned char	*p;
 	dp = (fdkparam_t) Gdktab;
+	if (dp->s2e_len == DK_BUFFER_SIZE_S2E)
+		return dp->s2e_len;
 	p = dp->s2e_buf + dp->s2e_wndx;
 
 	if ( dp->s2e_wndx >= dp->s2e_rndx )
@@ -781,6 +786,8 @@ int delimiter_read_2(int port, int send_buffered_data)
 	unsigned char	c, d;
 	dp = (fdkparam_t) Gdktab;
 
+	if (dp->s2e_len == DK_BUFFER_SIZE_S2E)
+		return dp->s2e_len;
 	p = dp->s2e_buf + dp->s2e_wndx;
 	if ( dp->s2e_wndx >= dp->s2e_rndx )
 	{
@@ -822,7 +829,26 @@ int delimiter_read_2(int port, int send_buffered_data)
 
     if (dp->s2e_len == DK_BUFFER_SIZE_S2E)
     {
-	    delimiter_send(port, DK_BUFFER_SIZE_S2E, 0);
+		if (dp->deli_process == DEL_STRIP)		/* strip delimiter */
+		{
+			f = dp->flag & (DK_DO_DELI_CH1 | DK_DO_DELI_CH2);
+		    if (f == DK_DO_DELI_CH1 && dp->s2e_buf[DK_BUFFER_SIZE_S2E-1] == dp->deli_char1)
+		    {
+				delimiter_send(port, DK_BUFFER_SIZE_S2E-1, 1);
+		    }
+		    else if (f == (DK_DO_DELI_CH1 | DK_DO_DELI_CH2) && dp->s2e_buf[DK_BUFFER_SIZE_S2E-1] == dp->deli_char2 && dp->s2e_buf[DK_BUFFER_SIZE_S2E-2] == dp->deli_char1)
+		    {
+				delimiter_send(port, DK_BUFFER_SIZE_S2E-2, 2);
+		    }
+			else
+			{
+				delimiter_send(port, DK_BUFFER_SIZE_S2E, 0);
+			}
+		}
+		else
+		{
+	    	delimiter_send(port, DK_BUFFER_SIZE_S2E, 0);
+		}
 	    return -1;
     }
 

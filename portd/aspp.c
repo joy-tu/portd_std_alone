@@ -87,6 +87,13 @@ char pattern_from_ser[2][65]={PATTERN_UPPER, PATTERN_LOWER};
 unsigned char pattern_old[256];
 #endif
 
+/* Dummy function for compile & link */
+static int sys_send_events(int event_id, int context);
+static int sys_send_events(int event_id, int context) 
+{
+	return 0;
+}
+
 void check_to_net(int checklen, char* buf, int buflen)
 {
 #ifdef DEBUG_BURNIN
@@ -379,9 +386,9 @@ void *aspp_start(void* arg)
     detail->fd_cmd_listen = detail->fd_data_listen = -1;
 
     /* Command Port */
-#ifdef MAKE_SUPPORT_CMDPORT
+//#ifdef MAKE_SUPPORT_CMDPORT
     aspp_open_cmd_listener(detail);
-#endif
+//#endif
 
     /* Data Port */
     aspp_open_data_listener(detail);
@@ -1267,8 +1274,10 @@ int aspp_recvfunc(int port, int fd_net, char *buf, int len)
 
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
+sleep(1);
+    nbytes = recv(fd_net, buf, 1024, 0);
+    SHOW_LOG(stderr, port, MSG_ERR, "Joy %s-%d, nbytes=%d\r\n", __func__, __LINE__, nbytes);
 
-    nbytes = recv(fd_net, buf, len, 0);
     check_from_net(nbytes, buf, len);
 
     if (nbytes == -1)
@@ -1903,7 +1912,7 @@ int aspp_accept_data(int port)
                 delimiter_start(port, detail->fd_port, detail->backlog, detail->fd_data, detail->data_sent, aspp_sendfunc, aspp_recvfunc, 1);
             }
 
-			//sys_send_events(EVENT_ID_OPMODE_CONNECT, port << 4);
+			sys_send_events(EVENT_ID_OPMODE_CONNECT, port << 4);
 
             on = 1;
             setsockopt(detail->fd_data[i], IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
@@ -2071,7 +2080,7 @@ void aspp_close_data(int port, int index)
     detail->fd_data[index] = -1;
     memset(&detail->peer[index], '\0', sizeof(struct sockaddr_in));
 
-	//sys_send_events(EVENT_ID_OPMODE_DISCONNECT, port << 4);
+	sys_send_events(EVENT_ID_OPMODE_DISCONNECT, port << 4);
 
     //@@ add by Kevin
     Gaspp_socket_stat[0][index].remote_ip = 0;

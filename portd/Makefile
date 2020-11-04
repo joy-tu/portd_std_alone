@@ -3,7 +3,8 @@ DIRS += $(PORTD_LIBS)
 ##################################
 # Output Mode
 ##################################
-CFLAGS += -pthread -lcrypt -lmx_uart_ctl
+CFLAGS += -pthread -lcrypt 
+#-lmx_uart_ctl
 MODE=exe
 
 ##################################

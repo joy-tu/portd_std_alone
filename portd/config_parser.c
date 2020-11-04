@@ -46,7 +46,7 @@ int get_ttyname(int port)
 {
 	int tty;
 
-	snprintf(Gtty_name, sizeof(Gtty_name), "/dev/ttyM%d", port - 1);
+	snprintf(Gtty_name, sizeof(Gtty_name), "/dev/ttyMXUSB%d", port - 1);
 
 	CONFIG_DEBUG("tty_name: %s\n", Gtty_name);
 	if((tty = open(Gtty_name, O_RDONLY)) < 0)
