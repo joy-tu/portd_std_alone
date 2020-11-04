@@ -33,10 +33,10 @@
 #include <sio.h>
 #include <config.h>
 #include <sysapi.h>
-#include <rfc2217.h>
-#include <pair.h>
+//#include <rfc2217.h>
+//#include <pair.h>
 #include "aspp.h"
-#include "udp/raw_udp.h"
+//#include "udp/raw_udp.h"
 #include <support.h>
 #include <datalog.h>
 #include <eventd.h>
@@ -177,8 +177,8 @@ printf("Joy %s-%d\r\n", __func__, __LINE__);
 
                     break;
                 case 'v':
-                    sys_getVersionString(buf, sizeof(buf));
-                    fprintf(stdout, "%s\n", buf);
+//                    sys_getVersionString(buf, sizeof(buf));
+//                    fprintf(stdout, "%s\n", buf);
 
                     exit(EXIT_SUCCESS);
                 case 'h':
@@ -680,24 +680,6 @@ void portd_wait_empty(int port, int fd_port, unsigned long timeout)
         }
         usleep(200000);
     }
-}
-
-unsigned long portd_getlocal_ip(void)
-{
-    char ipaddr[20];
-
-    sys_getActiveIP(ipaddr);
-
-    return inet_addr(ipaddr);
-}
-
-unsigned long portd_getbcast_ip(void)
-{
-    char ipaddr[20];
-
-    sys_getActiveBcase(ipaddr);
-
-    return htonl(inet_addr(ipaddr));
 }
 
 int portd_getexitflag(int port)

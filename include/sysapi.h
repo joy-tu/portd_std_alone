@@ -44,7 +44,6 @@
 
 #define IF_NUM_DEV_ETH0		0
 #define IF_NUM_DEV_ETH1		1
-#define SYS_WARMSTART_FLAG  "/configData/.sys_reboot"
 #define SYS_IPCHANGE_FLAG  "/configData/.sys_ipchange"
 #define SYS_SCMSTATUS_FLAG  "/var/run/scm_status"
 #define WLAN_PROFILE_ACTIVE "/var/run/profile.active"
@@ -102,9 +101,6 @@ enum
     STATUS_DO0,
     STATUS_DO1
 };
-int cmpFile(char *filename1, char *filename2);
-int cmpDir(char *dirname1, char *dirname2);
-int dirExist(char *dirname);
 //#elif defined(w2x50a) ||defined(ia5x50aio)
 #ifdef w2x50a
 #define SYSTEM_EXPORT_NAME	"NPortIAW5x50A_IO.txt"
@@ -157,13 +153,8 @@ int dirExist(char *dirname);
 //
 // System API protection
 //
-char* _strcpy(char *dest, const char *src);
-size_t _strlen(const char *str);
-int _atoi(const char *str);
-int _strcmp(const char* s1, const char* s2);
 ////
 #if defined(w2x50a) || defined (ia5x50aio)
-int sys_log_clear(void);
 int sys_log_write(char* buf, int len);
 int sys_log_read(char* buf, int len);
 int sys_rx_xmodem(char *filename, char *filepath, int protocol);
@@ -175,45 +166,24 @@ unsigned int sys_get_pid(int port, const char* pidfile);
 int sys_save_pid(int port, const char* pidfile);
 void sys_rm_pid(int port, const char* pidfile);
 int sys_daemon_init(void);
-int Ssys_getServerIp(char* host, unsigned long *inaddr, int timeout);
 int sys_getmacaddr(const char *interface, char *addr);
-int sys_getmyip(const char *interface, char *addr);
 int sys_getmynetmask(const char *interface, char *addr);
 int sys_getmybroadcast(const char *interface, char *addr);
-char *sys_getGateway(char *ifname);
 int sys_getActiveProfile(void);
-void sys_setEventFlag(unsigned long old_ip);
 int sys_send_mtc_msg(int idx, int cond, char *tag, char *act, char *inact);
 //int sys_send_events(int event_id, int context);
 int sys_send_events_ex(int event_id, int context, unsigned long opmode, int ip, int port);
-void sys_reload_eventd();
-int sys_miscd_send(int event_id, int value);
-void sys_reload_miscd();
-int sys_gethostTableEntry(int index, char *host, int host_size, char *ip, int ip_size);
-int sys_sethostTableEntry(char host[16][40], char ip[16][32]);
+
 void sys_getVersionExt(int *main_ver, int *sub_ver, int *ext_ver);
 void sys_getVersionString(char *buf, int size);
 void sys_reset_function(int flag);
 void restart_if(int ifdev, int restart);
-void sys_reboot(int mode);
-int sys_getActiveNetworkPort(void);
-void sys_setActiveNetworkPort(int ifnum);
-int sys_getActiveNetworkName(char* buf);
 int sys_getActiveIP(char *addr);
 int sys_getActiveNetmask(char *addr);
 int sys_getActiveBcase(char *addr);
-int sys_checkEthLink(void);
 void sys_CreateSNMPConf();
-int sys_getSiteSurveyFlag(void);
-void sys_setSiteSurveyFlag(int flag);
 #if defined(w2x50a) || defined (ia5x50aio)
-char* _chk_interface(char *interface);
 #endif
-
-#ifdef SUPPORT_DIO
-int	DIO_GetSingleIO(int io, int *mode);
-int	DIO_GetSingleIOStatus(int io, int *highlow);
-#endif // SUPPORT_DIO
 
 struct _netstat_table
 {
@@ -272,11 +242,8 @@ typedef struct port_status* PORT_STATUS_T;
 
 #define NETSTAT_TCP 0x0001
 #define NETSTAT_UDP 0x0002
-int sys_getnetstat(int flags, _NETSTAT_TABLE nt[], int nt_size);
 
 #define S2N_IP_LEN 16
-int sys_getS2NStatus(int port, char ip[8][S2N_IP_LEN]);
-int sys_getPortStatus(int port, PORT_STATUS *p_status);
 
 
 #ifdef SUPPORT_DIO
@@ -306,12 +273,9 @@ int sys_get_dio_mode(int pin);
 #define DIOD_RELOAD_FUNC    1
 #define DIOD_RELOAD_ALL     2
 #define DIOD_RESTART        3
-int sys_reload_diod(int sig);
 
 #endif // SUPPORT_DIO
 
-int sys_getSCMStatus();
-int sys_setSCMStatus(int flag);
 
 /* Configuration Import/Export */
 int Scf_configurePlainTextExport(char * buffer, int bufsize, int *o_size);
@@ -329,8 +293,6 @@ char * sys_getCountryCode(void);
 int sys_get_froam_status(int *enable, int *numOfFreq, int freq[3]);
 
 // SUPPORT_STATIC_GARP
-int check_ip(char *buf, int size);
-int check_mac(char *buf, int size);
 
 void sys_wireless_log(const char *fmt, ...);
 void sys_clear_wireless_log(void);
@@ -377,12 +339,5 @@ int sys_fmtSD(void);
 int sys_config_export_to_file(char *filename,int *o_size);
 int sys_config_export_to_sd(int *o_size);
 int sys_config_import_from_sd(int ip_config);
-
-/* Get the IP from domain name */
-int dns_lookup(char *hostname, char *actual_ip, unsigned int ip_len);
-/* Check the domain name is valid or not*/
-int is_valid_domain_name(char *hostname, int name_len);
-/* Escape double quote for string */
-int escape_quote_in_string(char *str, char *new_buf, int new_buf_len);
 
 #endif /* _SYSAPI_H_ */
