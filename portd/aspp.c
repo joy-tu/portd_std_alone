@@ -1274,9 +1274,9 @@ int aspp_recvfunc(int port, int fd_net, char *buf, int len)
 
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
-sleep(1);
-    nbytes = recv(fd_net, buf, 1024, 0);
-    SHOW_LOG(stderr, port, MSG_ERR, "Joy %s-%d, nbytes=%d\r\n", __func__, __LINE__, nbytes);
+
+    nbytes = recv(fd_net, buf, len, 0);
+    //SHOW_LOG(stderr, port, MSG_ERR, "Joy %s-%d, nbytes=%d\r\n", __func__, __LINE__, nbytes);
 
     check_from_net(nbytes, buf, len);
 
