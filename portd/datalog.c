@@ -9,8 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <aptypes.h>
-#include <config.h>
 #include <sio.h>
 #include <datalog.h>
 #include <sys/shm.h>

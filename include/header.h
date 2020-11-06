@@ -6,15 +6,9 @@
 /*****************************************************************************/
 
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
-
-#include <systime.h>
 
 #ifndef MAX
 #define MAX(a,b) ((a > b) ? a : b)
@@ -23,7 +17,6 @@
 #ifndef MIN
 #define MIN(a,b) ((a < b) ? a : b)
 #endif
-
 
 #ifndef _INT8U_
     #define _INT8U_

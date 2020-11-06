@@ -7,10 +7,6 @@
 #ifndef _PORTD_H_
 #define _PORTD_H_
 
-#include <pthread.h>
-#include <netinet/in.h>
-//#include <support.h>
-
 #define DISABLE_LINUX_SYN_BACKLOG 1
 
 #define DSPORTD_PID_FILE "/run/portd%02d.pid"
@@ -59,13 +55,12 @@
 #define PORTD_PSWD_LEN	16
 #endif
 
-
 #define SUPPORT_TCP_KEEPALIVE
 
 void sighup_handler(int sig);
 
 void 	port_buffering_start(int port);
-int		port_buffering_active(int port);
+int	port_buffering_active(int port);
 void 	port_buffering_check_restart(int port);
 void 	port_buffering_reset(int port);
 void 	port_buffering_flush(int port);
@@ -73,7 +68,7 @@ void 	buffering_offline_read(int port);
 int 	buffering_sio_read(int port, char *buf, int len);
 int 	buffering_read(int port, char *buf, int len);
 long 	port_buffering_len(int port);
-int		port_buffering_tcp_is_clear(int port, int do_update);
+int	port_buffering_tcp_is_clear(int port, int do_update);
 int   	delimiter_check_buffered(int port);
 
 void delimiter_start(int port, int fd_port, int max_conns, int fd_net[], int data_sent[],
@@ -201,7 +196,6 @@ typedef struct raw_udp_serial
     int     local_port;             /* local listening port */
     int     finish;
 } RAW_UDP_SERIAL, *PRAW_UDP_SERIAL;
-
 
 int portd_getexitflag(int port);
 void portd_setexitflag(int port, int flag);

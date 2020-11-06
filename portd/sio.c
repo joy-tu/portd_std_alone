@@ -19,7 +19,7 @@
 #include <termios.h>
 #include <string.h>
 #include <signal.h>
-#include <sysapi.h>
+#include <common.h>
 #ifdef __CYGWIN__
 #include <termios.h>
 #else
@@ -33,7 +33,8 @@
 #include <sys/file.h>
 #include <header.h>
 #include <debug.h>
-#include <config.h>
+#include <common.h>
+//#include <config.h>
 #include <sio.h>
 #include <portd.h>
 //#include <support.h>
@@ -960,6 +961,17 @@ int sio_read_timeout(int port, char* buf, int len, int timeout_ms)
         else if(sleep_flag > 0)
             sleep_flag--;
         count = 0;
+
+/*  Copyright (C) MOXA Inc. All rights reserved.
+
+    This software is distributed under the terms of the
+    MOXA License.  See the file COPYING-MOXA for details.
+*/
+
+#ifndef _SYSTIME_H
+#define _SYSTIME_H
+unsigned long sys_clock_ms(void);
+#endif
         last_ms = sys_clock_ms();
     }
     count++;

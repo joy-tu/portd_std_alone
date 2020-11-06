@@ -31,8 +31,8 @@
 #include <arpa/inet.h>
 #include <portd.h>
 #include <sio.h>
-#include <config.h>
-#include <sysapi.h>
+//#include <config.h>
+//#include <sysapi.h>
 //#include <rfc2217.h>
 //#include <pair.h>
 #include "aspp.h"

@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
-#include <config.h>
+#include <header.h>
 #include <portd.h>
 #include <delimit.h>
 #include <sio.h>

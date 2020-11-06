@@ -16,8 +16,8 @@
 #endif
 
 #include <header.h>
-#include <config.h>
-#include <sysapi.h>
+//#include <config.h>
+#include <common.h>
 #include <sio.h>
 #include <portd.h>
 #include "aspp.h"
