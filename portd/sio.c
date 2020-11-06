@@ -36,7 +36,7 @@
 #include <config.h>
 #include <sio.h>
 #include <portd.h>
-#include <support.h>
+//#include <support.h>
 //#include <moxa/mx_uart.h>
 #include "../message.h"
 
