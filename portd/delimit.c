@@ -26,8 +26,6 @@
 #include <sio.h>
 #include <datalog.h>
 #include "aspp.h"
-#include <sys/shm.h>
-#include <sys/sem.h>
 #include "../message.h"
 
 #define DK_FORCE_TX_SIZE  DK_BUFFER_SIZE_S2E  /* force transmit if buffered data size exceeds this */
@@ -448,8 +446,13 @@ int delimiter_init(int port, int has_delimiter, int has_buffering)
 
 	if (Scf_getSerialDataLog(port))
 	{
+#ifdef SUPPORT_PORTD_LOG	
 		dp->sio_read = log_sio_read;
 		dp->sio_write = log_sio_write;
+#else
+		dp->sio_read = NULL;
+		dp->sio_write = NULL;
+#endif		
 	}
 	else
 	{

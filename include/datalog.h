@@ -21,8 +21,8 @@
  */
 void log_init(int port);
 int log_port (int port, char direction, char *msg, int length);
-int	log_sio_write(int port, char *buf, int len);
-int	log_sio_read(int port, char *buf, int len);
+int log_sio_write(int port, char *buf, int len);
+int log_sio_read(int port, char *buf, int len);
 
 /*
  * APIs called by httpd or conosle

@@ -26,23 +26,15 @@
 #include <pthread.h>
 #include <header.h>
 #include <debug.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <portd.h>
 #include <sio.h>
-//#include <config.h>
-//#include <sysapi.h>
-//#include <rfc2217.h>
-//#include <pair.h>
 #include "aspp.h"
-//#include "udp/raw_udp.h"
-//#include <support.h>
 #include <datalog.h>
+//#include <sys/types.h>          /* See NOTES */
+//#include <sys/stat.h>          /* See NOTES */
 #include "debug.h"
 #include "../message.h"
-#include <sys/types.h>          /* See NOTES */
-#include <sys/stat.h>          /* See NOTES */
 
 
 #ifdef SUPPORT_SERCMD
@@ -259,9 +251,9 @@ printf("Joy %s-%d, stderr=%d\r\n", __func__, __LINE__, stderr);
 SHOW_LOG(stderr, -1, "info", "Invalid port specified!\n");
 
 
-
+#ifdef SUPPORT_PORTD_LOG
 	log_init(port_idx);
-
+#endif /* SUPPORT_PORTD_LOG */
     while( 1 )
     {
         if (sys_save_pid(port_idx, DSPORTD_PID_FILE) < 0)

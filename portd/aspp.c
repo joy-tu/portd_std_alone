@@ -16,7 +16,6 @@
 #endif
 
 #include <header.h>
-//#include <config.h>
 #include <common.h>
 #include <sio.h>
 #include <portd.h>
@@ -24,8 +23,6 @@
 #include <fcntl.h>
 #include <debug.h>
 #include <stdio.h>
-//#include <support.h>
-#include <eventd.h>
 #include "../message.h"
 
 #define TMP_LEN 	512
@@ -86,13 +83,6 @@ char pattern_from_ser[2][65]={PATTERN_UPPER, PATTERN_LOWER};
 
 unsigned char pattern_old[256];
 #endif
-
-/* Dummy function for compile & link */
-static int sys_send_events(int event_id, int context);
-static int sys_send_events(int event_id, int context) 
-{
-	return 0;
-}
 
 void check_to_net(int checklen, char* buf, int buflen)
 {

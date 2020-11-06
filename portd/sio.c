@@ -1,4 +1,3 @@
-
 /*  Copyright (C) MOXA Inc. All rights reserved.
 
     This software is distributed under the terms of the
@@ -6,44 +5,26 @@
 */
 /*
     sio.c
-
-    Serial I/O API for MiiNEPort W1.
-
-    2011-01-04  James Wang
-        developing...
 */
 
 #include <stdio.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <termios.h>
-#include <string.h>
 #include <signal.h>
 #include <common.h>
 #ifdef __CYGWIN__
 #include <termios.h>
 #else
+#include <termios.h>
 #include <linux/serial.h>
 #endif // __CYGWIN__
-
 #include <errno.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/file.h>
 #include <header.h>
 #include <debug.h>
-#include <common.h>
-//#include <config.h>
 #include <sio.h>
 #include <portd.h>
-//#include <support.h>
-//#include <moxa/mx_uart.h>
 #include "../message.h"
+#include "../config.h"
 
-#ifdef SUPPORT_SERCMD
-#include <scm.h>
-#endif
 //
 // MOXA ioctls
 //
@@ -69,7 +50,6 @@
 #define	MOXA_SET_SPECIAL_BAUD_RATE	(MOXA + 0x64)
 #define	MOXA_GET_SPECIAL_BAUD_RATE	(MOXA + 0x65)
 
-#include "../config.h"
 #define TTY_NAME Gtty_name
 
 #ifdef SUPPORT_INTERNAL_UART

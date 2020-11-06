@@ -1,6 +1,6 @@
-#include "../config.h"
-#include "sio.h"
 #include <header.h>
+#include "sio.h"
+#include "../config.h"
 
 int Scf_getMaxPorts(){
 	return MAX_PORT;
