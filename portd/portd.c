@@ -37,9 +37,8 @@
 //#include <pair.h>
 #include "aspp.h"
 //#include "udp/raw_udp.h"
-#include <support.h>
+//#include <support.h>
 #include <datalog.h>
-#include <eventd.h>
 #include "debug.h"
 #include "../message.h"
 #include <sys/types.h>          /* See NOTES */
