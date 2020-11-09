@@ -26,10 +26,6 @@
 #include "../message.h"
 
 #define TMP_LEN 	512
-#ifdef SUPPORT_SERCMD
-extern int Gscm_active;
-extern int Gscm_online;
-#endif
 // for DSCI command 0x14 (dsc_GetNetstat), because we do not have tcp_state function now.
 aspp_socket_stat Gaspp_socket_stat[DCF_MAX_SERIAL_PORT][TCP_LISTEN_BACKLOG];
 
@@ -742,13 +738,6 @@ void aspp_main(int port, int is_driver)
     //while (!portd_terminate[port-1] && !detail->finish)
     while( !portd_getexitflag(port) && !detail->finish )
     {
-#ifdef SUPPORT_SERCMD
-        if (Gscm_active)
-        {
-            usleep(100000);
-            continue;
-        }
-#endif
 #if 1
         static int count=0;
         static unsigned long t=0;
@@ -984,9 +973,6 @@ system("rm -f /var/log/debug");
 #endif
 
 
-#ifdef SUPPORT_SERCMD
-                    Gscm_online = 1;
-#endif
                 }
 #ifdef DISABLE_LINUX_SYN_BACKLOG
                 int data_port_index = -1;
@@ -1136,9 +1122,6 @@ system("rm -f /var/log/debug");
                 detail->port_write_flag = 0;
         }
     } /* End of main loop */
-#ifdef SUPPORT_SERCMD
-    Gscm_online = 0;
-#endif
     delimiter_stop(port);
     portd_wait_empty(port, detail->fd_port, 3000);
 }
@@ -1177,8 +1160,6 @@ int aspp_check_inactivity(int port, int n, unsigned long idletime)
     }
     return result;
 }
-
-
 
 int	aspp_sendfunc(int port, int fd_net, char *buf, int len)
 {

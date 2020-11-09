@@ -15,10 +15,6 @@
 #define MAX_PORTS           1
 #elif defined(w1)
 #define MAX_PORTS           1
-#elif defined(w2x50a)
-#define MAX_PORTS           2
-#elif defined(ia5x50aio)
-#define MAX_PORTS           2
 #else
 #error unknow module
 #endif
@@ -145,9 +141,6 @@ int sio_setxonxoff(int port, unsigned char xon, unsigned char xoff);
 int sio_baud(int port, long speed);
 int sio_getch(int port);
 int sio_read(int port, char *buf, int len);
-#ifdef SUPPORT_SERCMD
-int sio_read_ex(int port, char *buf, int len);
-#endif
 int sio_read_timeout(int port, char *buf, int len, int timeout_ms);
 int sio_putch(int port, int term);
 int sio_write(int oprt, char *buf, int len);

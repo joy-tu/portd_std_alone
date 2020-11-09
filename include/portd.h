@@ -43,18 +43,6 @@
 #define CTRLFLAG_SKIPJAM		0x01	/* Skip jammed connection 				*/
 #define CTRLFLAG_ALLOWDRV		0x02	/* Allow host's driver control command  */
 
-#ifdef SUPPORT_RTERMINAL_MODE
-#define D_AUTH_NONE			0x00		/* Authentication: none    */
-#define D_AUTH_LOCAL		0x01		/* Authentication: local   */
-#define D_AUTH_RADIUS		0x02		/* Authentication: RADIUS  */
-
-#define	DCF_CRLF_TO_CRLF		0x0000
-#define	DCF_CRLF_TO_CR			0x0001
-#define	DCF_CRLF_TO_LF			0x0002
-
-#define PORTD_PSWD_LEN	16
-#endif
-
 #define SUPPORT_TCP_KEEPALIVE
 
 void sighup_handler(int sig);
@@ -106,12 +94,6 @@ typedef struct port_data
     int         application;
     void        *detail;
     pthread_t   thread_id;
-#ifdef SUPPORT_SERCMD
-    pthread_t   thread_scm_id;
-#endif
-#ifdef SUPPORT_RTERMINAL_MODE
-	pthread_t   thread_radius_id;
-#endif
 } PORT_DATA, *PPORT_DATA;
 
 typedef struct aspp_serial

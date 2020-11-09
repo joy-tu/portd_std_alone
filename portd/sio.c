@@ -260,9 +260,6 @@ int sio_open(int port)
     //sio_reset_count(port);
     return ptr->fd;
 }
-#ifdef SUPPORT_SERCMD
-int	check_trigger = 0;
-#endif
 int sio_close(int port)
 {
     PortInfo_t ptr;
@@ -275,9 +272,6 @@ int sio_close(int port)
     if( close(ptr->fd) == -1 )
         return SIO_BADPORT;
     ptr->fd = -1;
-#ifdef SUPPORT_SERCMD
-    check_trigger = 0;
-#endif
     return SIO_OK;
 }
 
@@ -722,144 +716,7 @@ int sio_getch(int port)
     return (int) ch;
 }
 
-#ifdef SUPPORT_SERCMD
-int Gsio_alarm = 0;
-void sio_alarm_handler (int a)
-{
-	Gsio_alarm = 1;
-	setitimer(ITIMER_REAL, NULL, NULL);
-}
-int sio_read(int port, char *buf, int len)
-{
-	PortInfo_t ptr;
-    	int n, i;
-	static u_char ch[3];
-	static int trigger;
-	static int cnt = 0;
-//	static int check_trigger = 0;
-	long ret;
-	int k;
-	struct itimerval t;
 
-	t.it_interval.tv_usec = 100000;
-	t.it_interval.tv_sec = 0;
-	t.it_value.tv_usec = 100000;
-	t.it_value.tv_sec = 0;
-	ret = 0;
-
-//	signal(SIGALRM, sio_alarm_handler );
-//	setitimer(ITIMER_REAL, &t, NULL);
-
-	if (!check_trigger) {
-		trigger = Scf_getScmTrigger();
-				Scf_getScmChar(&ch[0], &ch[1], &ch[2]);
-		check_trigger = 1;
-	}
-	if (trigger == 2) { /* SW_TRIGGER */
-//		Scf_getScmChar(&ch[0], &ch[1], &ch[2]);
-		if( (ptr = getPort(port)) == NULL )
-        		return SIO_BADPORT;
-		if( ptr->fd < 0 )
-        		return SIO_BADPORT;
-	       if( buf == NULL || len < 0 )
-        		return SIO_BADPARM;
-
-		signal(SIGALRM, sio_alarm_handler );
-		setitimer(ITIMER_REAL, &t, NULL);
-
-	       n = read(ptr->fd, buf, len);
-		k = n;
-		if (Gsio_alarm == 1) {
-			cnt = 0;
-			Gsio_alarm = 0;
-		}
-    		if( n < 0 )
-    		{
-		       if( errno == EAGAIN )
-            		return 0;
-		       sio_errno = errno;
-		       return SIO_WRITETIMEOUT;
-    		}
-		for (i = 0; i < n; i ++) {
-			if (buf[i] == ch[0] && cnt == 0)  {
-				cnt ++;
-			} else if (buf[i] == ch[1] && cnt == 1) {
-				cnt ++;
-			} else if (buf[i] == ch[2] && cnt == 2) {
-				cnt ++;
-
-				kill(sys_get_pid(port, DSPORTD_PID_FILE), SIGUSR1);
-				return 0;
-			}
-			else {
-				cnt = 0;
-			}
-		}
-#if 0
-		if (cnt) {
-			ret = sio_iqueue(port);
-			if (cnt == 1 && ret >= 2) {
-				n += read(ptr->fd, &buf[n], 2);
-				if (buf[k + 1] == ch[1] && buf[k + 2] == ch[2]) {
-				kill(sys_get_pid(port, DSPORTD_PID_FILE), SIGUSR1);
-					return 0;
-				}
-			} else if (cnt == 2 && ret >= 1) {
-				n += read(ptr->fd, &buf[n], 1);
-				if (buf[k + 1] == ch[2]) {
-				kill(sys_get_pid(port, DSPORTD_PID_FILE), SIGUSR1);
-					return 0;
-				}
-			}
-		}
-#endif
-	}
-	else { /* sio_read original */
-	    if( (ptr = getPort(port)) == NULL )
-	        return SIO_BADPORT;
-	    if( ptr->fd < 0 )
-	        return SIO_BADPORT;
-	    if( buf == NULL || len < 0 )
-	        return SIO_BADPARM;
-	    n = read(ptr->fd, buf, len);
-	    if( n < 0 )
-	    {
-	        if( errno == EAGAIN )
-	            return 0;
-	        sio_errno = errno;
-	        return SIO_WRITETIMEOUT;
-	    }
-	    return n;
-	}
-
-       return n;
-}
-
-int sio_read_ex(int port, char *buf, int len)
-{
-    PortInfo_t ptr;
-    int n;
-
-    if( (ptr = getPort(port)) == NULL )
-        return SIO_BADPORT;
-    if( ptr->fd < 0 )
-        return SIO_BADPORT;
-    if( buf == NULL || len < 0 )
-        return SIO_BADPARM;
-    n = read(ptr->fd, buf, len);
-    if( n < 0 )
-    {
-        if( errno == EAGAIN )
-            return 0;
-        sio_errno = errno;
-        return SIO_WRITETIMEOUT;
-    }
-
-    return n;
-}
-
-#else
-//static int Gcnt = 0;
 //#define __SCHE_BURNIN_DEBUG 
 #ifdef __SCHE_BURNIN_DEBUG
 static int Gptrb = 0;
@@ -925,7 +782,6 @@ int sio_read(int port, char *buf, int len)
     }
     return n;
 }
-#endif
 
 int sio_read_timeout(int port, char* buf, int len, int timeout_ms)
 {
