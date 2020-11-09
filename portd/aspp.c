@@ -7,9 +7,6 @@
 /* Company      : MOXA Technologies Co., Ltd.                                */
 /* Filename     : aspp.c                                                     */
 /* Description  :                                                            */
-/* Product      : Secured Serial Device Server                               */
-/* Programmer   : Shinhsy Shaw                                               */
-/* Date         : 2003-07-22                                                 */
 /*****************************************************************************/
 #ifndef _ASPP_C
 #define _ASPP_C
@@ -34,304 +31,25 @@ extern struct port_data Gport;
 
 static int aspp_notify_data(int port, unsigned char* buf);
 
-//#define DEBUG_BURNIN
-
-#ifdef DEBUG_BURNIN
-/* To debug burn-in, either define BURNIN_NEW or BURNIN_OLD. */
-/* Don't try to define both. */
-#define BURNIN_NEW
-//#define BURNIN_OLD
-
-#include <stdio.h>
-#define DBG_ASPP(...) \
-	do { \
-		char tmpbuf[128]; \
-		int ii; \
-		ii = sprintf(tmpbuf, "printf \""); \
-		ii += sprintf(&tmpbuf[ii], __VA_ARGS__); \
-		sprintf(&tmpbuf[ii], "\" >> /var/log/debug"); \
-		system(tmpbuf); \
-	} while(0)
-
-#define PATTERN_UPPER   "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABC000000000"
-#define PATTERN_LOWER   "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabc000000000"
-
-
-int end_debug_to_net = 0;
-int cnt_to_net = 0;
-int off_to_net = 0;
-char pattern_to_net[2][65]={PATTERN_UPPER, PATTERN_LOWER};
-
-int end_debug_from_net = 0;
-int cnt_from_net = 0;
-int off_from_net = 0;
-char pattern_from_net[2][65]={PATTERN_UPPER, PATTERN_LOWER};
-
-int end_debug_to_ser = 0;
-int cnt_to_ser = 0;
-int off_to_ser = 0;
-char pattern_to_ser[2][65]={PATTERN_UPPER, PATTERN_LOWER};
-
-int end_debug_from_ser = 0;
-int cnt_from_ser = 0;
-int off_from_ser = 0;
-char pattern_from_ser[2][65]={PATTERN_UPPER, PATTERN_LOWER};
-
-unsigned char pattern_old[256];
-#endif
-
 void check_to_net(int checklen, char* buf, int buflen)
 {
-#ifdef DEBUG_BURNIN
-#ifdef BURNIN_NEW
-    static int i;
-    if (end_debug_to_net)
-        return;
-    
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [to net] buffer overflow\n");
-        end_debug_to_net = 1;
-    }
-
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_to_net[cnt_to_net%2][off_to_net]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [to net] data error, check cnt(%d), idx(%d), 0x%x != 0x%x\n",
-                cnt_to_net, off_to_net, buf[i]&0xff, pattern_to_net[cnt_to_net%2][off_to_net]&0xff);
-            end_debug_to_net = 1;
-            return;
-        }
-        off_to_net++;
-
-        if (off_to_net == 55)
-            sprintf(pattern_to_net[cnt_to_net%2]+off_to_net, "%09d", cnt_to_net);
-        else if (off_to_net >= 64)
-        {
-            cnt_to_net++;
-            off_to_net = 0;
-        }
-    }
-#elif defined(BURNIN_OLD)
-    static int i;
-    if (end_debug_to_net)
-        return;
-
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [to net] buffer overflow\n");
-        end_debug_to_net = 1;
-    }
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_old[off_to_net]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [to net] data error, received(0x%x) != should(0x%x)\n",
-                buf[i]&0xff, pattern_old[off_to_net]);
-            end_debug_to_net = 1;
-            return;
-        }
-        off_to_net ++;
-        if (off_to_net >= 256)
-            off_to_net = 0;
-    }
-
-#endif
-#else
     return;
-#endif
 }
 
 void check_from_net(int checklen, char* buf, int buflen)
 {
-#ifdef DEBUG_BURNIN
-#ifdef BURNIN_NEW
-    static int i;
-    if (end_debug_from_net)
-        return;
-    
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [from net] buffer overflow\n");
-        end_debug_from_net = 1;
-    }
-
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_from_net[cnt_from_net%2][off_from_net]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [from net] data error, check cnt(%d), idx(%d), 0x%x != 0x%x\n",
-                cnt_from_net, off_from_net, buf[i]&0xff, pattern_from_net[cnt_from_net%2][off_from_net]&0xff);
-
-            end_debug_from_net = 1;
-            return;
-        }
-        off_from_net++;
-
-        if (off_from_net == 55)
-            sprintf(pattern_from_net[cnt_from_net%2]+off_from_net, "%09d", cnt_from_net);
-        else if (off_from_net >= 64)
-        {
-            cnt_from_net++;
-            off_from_net = 0;
-        }
-    }
-#elif defined(BURNIN_OLD)
-    static int i;
-    if (end_debug_from_net)
-        return;
-
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [from net] buffer overflow\n");
-        end_debug_from_net = 1;
-    }
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_old[off_from_net]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [from net] data error, received(0x%x) != should(0x%x)\n",
-                buf[i]&0xff, pattern_old[off_from_net]);
-            end_debug_from_net = 1;
-            return;
-        }
-        off_from_net ++;
-        if (off_from_net >= 256)
-            off_from_net = 0;
-    }
-#endif
-#else
     return;
-#endif
 }
-
 
 void check_to_ser(int checklen, char* buf, int buflen)
 {
-#ifdef DEBUG_BURNIN
-#ifdef BURNIN_NEW
-    static int i;
-    if (end_debug_to_ser)
-        return;
-    
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [to ser] buffer overflow\n");
-        end_debug_to_ser = 1;
-    }
-
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_to_ser[cnt_to_ser%2][off_to_ser]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [to ser] data error, check cnt(%d), idx(%d), 0x%x != 0x%x\n",
-                cnt_to_ser, off_to_ser, buf[i]&0xff, pattern_to_ser[cnt_to_ser%2][off_to_ser]&0xff);
-            end_debug_to_ser = 1;
-            return;
-        }
-        off_to_ser++;
-
-        if (off_to_ser == 55)
-            sprintf(pattern_to_ser[cnt_to_ser%2]+off_to_ser, "%09d", cnt_to_ser);
-        else if (off_to_ser >= 64)
-        {
-            cnt_to_ser++;
-            off_to_ser = 0;
-        }
-    }
-#elif defined(BURNIN_OLD)
-    static int i;
-    if (end_debug_to_ser)
-        return;
-
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [to ser] buffer overflow\n");
-        end_debug_to_ser = 1;
-    }
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_old[off_to_ser]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [to ser] data error, received(0x%x) != should(0x%x)\n",
-                buf[i]&0xff, pattern_old[off_to_ser]);
-            end_debug_to_ser = 1;
-            return;
-        }
-        off_to_ser ++;
-        if (off_to_ser >= 256)
-            off_to_ser = 0;
-    }
-#endif
-#else
     return;
-#endif
 }
 
 void check_from_ser(int checklen, char* buf, int buflen)
 {
-#ifdef DEBUG_BURNIN
-#ifdef BURNIN_NEW
-    static int i;
-    if (end_debug_from_ser)
-        return;
-    
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [from ser] buffer overflow\n");
-        end_debug_from_ser = 1;
-    }
-
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_from_ser[cnt_from_ser%2][off_from_ser]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [from ser] data error, check cnt(%d), idx(%d), 0x%x != 0x%x\n",
-                cnt_from_ser, off_from_ser, buf[i]&0xff, pattern_from_ser[cnt_from_ser%2][off_from_ser]&0xff);
-
-            end_debug_from_ser = 1;
-            return;
-        }
-        off_from_ser++;
-
-        if (off_from_ser == 55)
-            sprintf(pattern_from_ser[cnt_from_ser%2]+off_from_ser, "%09d", cnt_from_ser);
-        else if (off_from_ser >= 64)
-        {
-            cnt_from_ser++;
-            off_from_ser = 0;
-        }
-    }
-#elif defined(BURNIN_OLD)
-    static int i;
-    if (end_debug_from_ser)
-        return;
-
-    if (checklen > buflen)
-    {
-        DBG_ASPP("\nBurn-in: [from ser] buffer overflow\n");
-        end_debug_from_ser = 1;
-    }
-    for (i=0; i<checklen; i++)
-    {
-        if ((buf[i]&0xff) != (pattern_old[off_from_ser]&0xff))
-        {
-            DBG_ASPP("\nBurn-in: [from ser] data error, received(0x%x) != should(0x%x)\n",
-                buf[i]&0xff, pattern_old[off_from_ser]);
-            end_debug_from_ser = 1;
-            return;
-        }
-        off_from_ser ++;
-        if (off_from_ser >= 256)
-            off_from_ser = 0;
-    }
-#endif
-#else
     return;
-#endif
 }
-
 
 void *aspp_start(void* arg)
 {
@@ -341,7 +59,7 @@ void *aspp_start(void* arg)
     int port;
     int i;
 
-	is_driver = ((int)arg & 0x8000) ? 0 : 1;
+    is_driver = ((int)arg & 0x8000) ? 0 : 1;
     port = (int)arg & ~0x8000;
 
     memset(Gaspp_socket_stat[0], 0x0, TCP_LISTEN_BACKLOG * sizeof(aspp_socket_stat));
@@ -372,35 +90,23 @@ void *aspp_start(void* arg)
     detail->fd_cmd_listen = detail->fd_data_listen = -1;
 
     /* Command Port */
-//#ifdef MAKE_SUPPORT_CMDPORT
     aspp_open_cmd_listener(detail);
-//#endif
 
     /* Data Port */
     aspp_open_data_listener(detail);
 
-	if (port_buffering_active(port))
-	{
-		aspp_open_serial(port);
-		sio_DTR(port, 1);		 	/* DTR on */
-		sio_RTS(port, 1);			/* RTS on */
-		port_buffering_start(port);
-	}
-	else
-	{
-		/* open/close serial port so that serial settings monitor web page can 
-		show setting values instead of default values */
-		aspp_open_serial(port);
-		sio_close(port);
-		sio_DTR(port, 0);		 	/* DTR off */
-		sio_RTS(port, 0);			/* RTS off */
-	}
+    	/* open/close serial port so that serial settings monitor web page can 
+    	show setting values instead of default values */
+    aspp_open_serial(port);
+    sio_close(port);
+    sio_DTR(port, 0);		 	/* DTR off */
+    sio_RTS(port, 0);			/* RTS off */
 
     while (1)
     {
         aspp_main(port, is_driver);
 
-		port_buffering_check_restart(port);
+//		port_buffering_check_restart(port);
 
         for (i=0; i<detail->backlog; i++)
         {
@@ -412,10 +118,7 @@ void *aspp_start(void* arg)
                 aspp_close_cmd(port, i);
 	    }
         }
-
-		if (!port_buffering_active(port)){
-        	aspp_close_serial(port);
-		}
+	 aspp_close_serial(port);
 
         //if (portd_terminate[port-1])
         if(portd_getexitflag(port))
@@ -667,7 +370,7 @@ void aspp_main(int port, int is_driver)
     unsigned long idletime;
     struct timeval tv;
     fd_set rfds, wfds;
-	int port_buffering_flag = 0, serial_data_buffered;
+	int port_buffering_flag = 0, serial_data_buffered = 0;
 
     ptr = &Gport;
     //portd_terminate[port-1] = 0;
@@ -692,14 +395,7 @@ void aspp_main(int port, int is_driver)
 #else
     realtty = (detail->backlog > 1)? 0 : 1;
 #endif
-
-	if (port_buffering_active(port))
-	{
-		detail->serial_flag = 1;
-		port_buffering_flag = 1;
-	}
-	else
-		detail->fd_port = -1;  /* was set in aspp_start() if port buffering is enabled*/
+    detail->fd_port = -1;  /* was set in aspp_start() if port buffering is enabled*/
 
     for (i=0; i< detail->backlog; i++)
     {
@@ -755,11 +451,13 @@ void aspp_main(int port, int is_driver)
         }
         count++;
 #endif
-
+#if 0    	
     	serial_data_buffered = delimiter_check_buffered(port);
-    	
-        aspp_setup_fd(port, &tv, &rfds, &wfds, &maxfd, port_buffering_flag, serial_data_buffered);
 
+        aspp_setup_fd(port, &tv, &rfds, &wfds, &maxfd, port_buffering_flag, serial_data_buffered);
+#else
+        aspp_setup_fd(port, &tv, &rfds, &wfds, &maxfd, port_buffering_flag, serial_data_buffered);
+#endif
         for (ci=0; ci < detail->backlog; ci++)
         {
             if (realtty)
@@ -954,25 +652,6 @@ void aspp_main(int port, int is_driver)
                 if (detail->connect_count == 0 && !detail->serial_flag)
                 {
                     detail->serial_flag = aspp_open_serial(port);
-#ifdef DEBUG_BURNIN
-end_debug_from_net = 0;
-cnt_from_net = 0;
-off_from_net = 0;
-end_debug_to_net = 0;
-cnt_to_net = 0;
-off_to_net = 0;
-end_debug_from_ser = 0;
-cnt_from_ser = 0;
-off_from_ser = 0;
-end_debug_to_ser = 0;
-cnt_to_ser = 0;
-off_to_ser = 0;
-for (i=0; i<256; i++)
-    pattern_old[i] = (unsigned char)i;
-system("rm -f /var/log/debug");
-#endif
-
-
                 }
 #ifdef DISABLE_LINUX_SYN_BACKLOG
                 int data_port_index = -1;
@@ -1234,8 +913,6 @@ int	aspp_sendfunc(int port, int fd_net, char *buf, int len)
 
     return max_nbytes;
 }
-
-
 
 int aspp_recvfunc(int port, int fd_net, char *buf, int len)
 {
@@ -1843,15 +1520,7 @@ int aspp_accept_data(int port)
     {
         if (((detail->flag[i] & FLAG_DATA_UP)== 0) && (detail->fd_data[i] <= 0))
         {
-#ifdef SUPPORT_LOG_CONNECT
-            log_opmode_connection info;
-#endif // SUPPORT_LOG_CONNECT
-#ifdef SUPPORT_SERIALTOS
-            int enable;
-#endif // SUPPORT_SERIALTOS
-
             int value;
-//          int data=0;
 
             n = sizeof(struct sockaddr_in);
 
@@ -1883,8 +1552,6 @@ int aspp_accept_data(int port)
                 delimiter_start(port, detail->fd_port, detail->backlog, detail->fd_data, detail->data_sent, aspp_sendfunc, aspp_recvfunc, 1);
             }
 
-			sys_send_events(EVENT_ID_OPMODE_CONNECT, port << 4);
-
             on = 1;
             setsockopt(detail->fd_data[i], IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 /*
@@ -1894,18 +1561,7 @@ int aspp_accept_data(int port)
             setsockopt(detail->fd_data[i], SOL_SOCKET, SO_SNDBUF, (char *)&data, sizeof(data));
 */
 
-#ifdef SUPPORT_TCP_KEEPALIVE
-            tcp_setAliveTime(port, detail->fd_data[i]);
-#endif // SUPPORT_TCP_KEEPALIVE
-
             /* serial tos */
-#ifdef SUPPORT_SERIALTOS
-            Scf_getSerialPortTos(port, &enable, &value);
-            if(enable)
-            {
-                setsockopt(detail->fd_data[i], IPPROTO_IP, IP_TOS, (int *)&value, sizeof(value));
-            }
-#endif // SUPPORT_SERIALTOS
 
             /* non-block */
             on = 1;
@@ -1922,12 +1578,6 @@ int aspp_accept_data(int port)
             detail->last_time[i] = sys_clock_ms();
             detail->connect_count++;
             find = 1;
-
-#ifdef SUPPORT_LOG_CONNECT
-            info.port_id = port + 1;
-            *(in_addr_t*)info.ip = detail->peer[i].sin_addr.s_addr;
-            Slog_put(DLOG_OPMODE_CONNECT, &info, sizeof(info));
-#endif // SUPPORT_LOG_CONNECT
 
             //@@ add by Kevin
             Gaspp_socket_stat[0][i].remote_ip = htonl(detail->peer[i].sin_addr.s_addr);
@@ -1963,9 +1613,6 @@ int aspp_accept_cmd(int port)
     {
         if (((detail->flag[i] & FLAG_CMD_UP)== 0) && (detail->fd_cmd[i] <= 0))
         {
-#ifdef SUPPORT_SERIALTOS
-            int enable;
-#endif // SUPPORT_SERIALTOS
             int value;
             n = sizeof(struct sockaddr_in);
 
@@ -1985,19 +1632,6 @@ int aspp_accept_cmd(int port)
 */
             on = 1;
             setsockopt(detail->fd_cmd[i], IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
-
-#ifdef SUPPORT_TCP_KEEPALIVE
-            tcp_setAliveTime(port, detail->fd_cmd[i]);
-#endif // SUPPORT_TCP_KEEPALIVE
-
-#ifdef SUPPORT_SERIALTOS
-            /* serial tos */
-            Scf_getSerialPortTos(port, &enable, &value);
-            if(enable)
-            {
-                setsockopt(detail->fd_cmd[i], IPPROTO_IP, IP_TOS, (int *)&value, sizeof(value));
-            }
-#endif // SUPPORT_SERIALTOS
 
             on = 1;
             ioctl(detail->fd_cmd[i], FIONBIO, &on);
@@ -2029,9 +1663,6 @@ void aspp_close_data(int port, int index)
     struct port_data *ptr;
     ASPP_SERIAL *detail;
     //u_long value=0;
-#ifdef SUPPORT_LOG_CONNECT
-    log_opmode_connection	info;
-#endif // SUPPORT_LOG_CONNECT
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
 
@@ -2039,19 +1670,11 @@ void aspp_close_data(int port, int index)
 
     detail->connect_count--;
 
-#ifdef SUPPORT_LOG_CONNECT
-    info.port_id = port + 1;
-    *(in_addr_t*)info.ip = detail->peer[index].sin_addr.s_addr;
-    Slog_put(DLOG_OPMODE_DISCONNECT, &info, sizeof(info));
-#endif // SUPPORT_LOG_CONNECT
-
     close(detail->fd_data[index]);
     detail->flag[index] &= ~FLAG_DATA_UP;
     detail->data_sent[index] = 0;
     detail->fd_data[index] = -1;
     memset(&detail->peer[index], '\0', sizeof(struct sockaddr_in));
-
-	sys_send_events(EVENT_ID_OPMODE_DISCONNECT, port << 4);
 
     //@@ add by Kevin
     Gaspp_socket_stat[0][index].remote_ip = 0;

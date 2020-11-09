@@ -23,17 +23,8 @@
 #define CFG_APPLICATION_DISABLED        0
 #define CFG_APPLICATION_DEVICE_CONTROL  0x100
 #define CFG_OPMODE_REALCOM              0
-#define CFG_OPMODE_RFC2217              1
 #define CFG_APPLICATION_SOCKET          0x200
 #define CFG_OPMODE_TCPSERVER            0
-#define CFG_OPMODE_TCPCLIENT            1
-#define CFG_OPMODE_UDP                  2
-#define CFG_APPLICATION_PAIR_CONNECTION 0x300
-#define CFG_OPMODE_PAIR_MASTER          0
-#define CFG_OPMODE_PAIR_SLAVE           1
-#define CFG_APPLICATION_ETH_MODEM       0x400
-#define CFG_APPLICATION_RTERMINAL       0x600
-
 
 #define DEL_NOTHING    1
 #define DEL_PLUSONE    2
@@ -42,22 +33,6 @@
 
 #define CTRLFLAG_SKIPJAM		0x01	/* Skip jammed connection 				*/
 #define CTRLFLAG_ALLOWDRV		0x02	/* Allow host's driver control command  */
-
-#define SUPPORT_TCP_KEEPALIVE
-
-void sighup_handler(int sig);
-
-void 	port_buffering_start(int port);
-int	port_buffering_active(int port);
-void 	port_buffering_check_restart(int port);
-void 	port_buffering_reset(int port);
-void 	port_buffering_flush(int port);
-void 	buffering_offline_read(int port);
-int 	buffering_sio_read(int port, char *buf, int len);
-int 	buffering_read(int port, char *buf, int len);
-long 	port_buffering_len(int port);
-int	port_buffering_tcp_is_clear(int port, int do_update);
-int   	delimiter_check_buffered(int port);
 
 void delimiter_start(int port, int fd_port, int max_conns, int fd_net[], int data_sent[],
                      int (*sendfunc)(int, int, char *, int), int (*recvfunc)(int, int, char *, int),
@@ -76,7 +51,6 @@ int delimiter_read(int port, int send_buffered_data);
 int delimiter_write(int port);
 void delimiter_stop(int port);
 
-
 #define DCF_MAX_SERIAL_PORT 1
 #define DCF_SOCK_BUF    4096
 int tcp_oqueue(int fd);
@@ -85,7 +59,6 @@ int tcp_state(int fd);
 void portd_wait_empty(int port, int fd_port, unsigned long timeout);
 unsigned long portd_getlocal_ip(void);
 unsigned long portd_getbcast_ip(void);
-
 
 typedef struct port_data
 {
@@ -148,7 +121,6 @@ typedef struct aspp_serial
     //    SSL_METHOD *meth;
 } ASPP_SERIAL, *PASPP_SERIAL;
 
-
 #define TCP_CLIENT_MAX_CONNECT  4
 #define DCF_IP_DNS_LEN          40
 #define UDP_MAX_CONNECT         4
@@ -169,21 +141,7 @@ typedef struct raw_tcp_serial
     int ctrlflag;
 } RAW_TCP_SERIAL;
 
-typedef struct raw_udp_serial
-{
-    int     fd_net;
-    unsigned long dip_begin[UDP_MAX_CONNECT];
-    unsigned long dip_end[UDP_MAX_CONNECT];
-    int     dip_port[UDP_MAX_CONNECT];
-    int     local_port;             /* local listening port */
-    int     finish;
-} RAW_UDP_SERIAL, *PRAW_UDP_SERIAL;
-
 int portd_getexitflag(int port);
 void portd_setexitflag(int port, int flag);
-
-#ifdef SUPPORT_TCP_KEEPALIVE
-void tcp_setAliveTime(int port, int fd);
-#endif // SUPPORT_TCP_KEEPALIVE
 
 #endif	/* _PORTD_H_ */

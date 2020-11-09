@@ -6,24 +6,9 @@
 
 #ifndef _DELIMIT_H_
 #define _DELIMIT_H_
-
-#define DK_SHM_KEY			6310
-
 #define DK_BUFFER_SIZE_E2S  1024
-
-#define DK_DO_FORCE_TX	0x0001
-#define DK_DO_DELI_CH1	0x0002
-#define DK_DO_DELI_CH2	0x0004
 #define DK_MODE_RAW_TCP 0x0008
-#define DK_LINK_SIO		0x0010
 #define DK_RUN			0x0020
-#define DK_DO_BUFFERING 0x0040
-//#define DK_DATA_IN_SD   0x0080
-//#define DK_SD_DATA_END  0x0100
-#define DK_RESET_BUFFER 0x0200
-#define DK_CAN_BUFFER 	0x0400
-#define DK_IGNORE_JAM_IP	0x0800
-#define DK_DO_DELIMITER (DK_DO_FORCE_TX | DK_DO_DELI_CH1 | DK_DO_DELI_CH2)
 
 struct data_keep_param
 {

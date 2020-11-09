@@ -44,8 +44,6 @@ static void sighup_restart(int port_idx)
 {
 	portd_received_sighup = 0;
 	portd_setexitflag(port_idx, 1);
-	//	sys_send_events(EVENT_ID_OPMODE_RESTART, port_idx << 4);
-	port_buffering_reset(port_idx);
 }
 
 static void usage()
@@ -109,26 +107,12 @@ int main(int argc, char *argv[])
             }
         }
     }
-#if 0
-    ret = lock_program_with_mac();
-    if (ret == -2)
-    {
-        SHOW_LOG(stderr, port_idx, MSG_ERR, "This software can only run on MOXA device.\n", port_idx);
-        exit(EXIT_FAILURE);
-    }
-    else if (ret == -1)
-    {
-        SHOW_LOG(stderr, port_idx, MSG_ERR, "Something wrong happened, please start portd again.\n", port_idx);
-        exit(EXIT_FAILURE);
-    }
-#endif
+
     load_runtime_conf(port_idx);
-printf("Joy %s-%d\r\n", __func__, __LINE__);
 	if (port_idx <= 0) {
 		SHOW_LOG(stderr, -1, MSG_ERR, "Invalid port specified!\n");
 		exit(EXIT_FAILURE);
     	}
-printf("Joy %s-%d, stderr=%d\r\n", __func__, __LINE__, stderr);
 #ifdef SUPPORT_PORTD_LOG
 	log_init(port_idx);
 #endif /* */
@@ -429,100 +413,4 @@ void portd_setexitflag(int port, int flag)
 }
 
 #define PATCH_TCP_USER_TIMEOUT
-#ifdef SUPPORT_TCP_KEEPALIVE
-void tcp_setAliveTime(int port, int fd)
-{
-    int on;
-    int alive;
-
-    alive = Scf_getPortAliveCheck(port) * 60; // s
-
-    //printf("alive = %d\r\n", alive);
-
-    if(alive > 0)
-        on = 1;
-    else
-        on = 0;
-    /* enable/disable TCP alive check time */
-    if(setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on)) < 0)
-    {
-        SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if(on == 1)
-    {
-#ifdef PATCH_TCP_USER_TIMEOUT
-#define TCP_USER_TIMEOUT    18  /* How long for loss retry before timeout */
-        int usertimeout = alive * 1000;
-        if(alive < (16*60)) {
-            if(setsockopt(fd, SOL_TCP, TCP_USER_TIMEOUT , &usertimeout, sizeof(int)) < 0)
-            {
-                SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
-                exit(EXIT_FAILURE);
-            }
-        }
-#endif
-
-        /* set avlie check time parameter */
-        int cnt, idle, intvl;
-#if 1
-        //cnt = 8;
-        //idle = alive / 4;
-        //intvl = alive * 3 / 4 / 8;
-
-		//For wireless environment, only send 8 keep-alive pkts in a period seems not enough.
-		//So we change to send keep-alive packet every 5 secs.
-        //intvl = 5;
-        intvl = 3;
-        //idle = alive / 4;
-        //RealCom 966 send every 6 secs, so can't use too small period
-        idle = 7;
-
-        cnt = (alive-idle)/intvl;
-        if(((alive-idle)%intvl) > 0)
-        	cnt++;
-
-        //#define MAX_TCP_KEEPIDLE        32767
-        //#define MAX_TCP_KEEPINTVL       32767
-        //#define MAX_TCP_KEEPCNT         127
-
-        if(cnt > 127)
-        {
-        	cnt = 127;	
-        	intvl = (alive-idle)/cnt;
-        	if(((alive-idle)%cnt) > 0)
-        		intvl++;
-        }
-        
-#else /* modify for precision */
-	 cnt = alive / 2;
-	 idle = 5;
-	 intvl = 2;
-#endif
-
-		// number of keep alive probe
-        if(setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &cnt, sizeof(int)) < 0)
-        {
-            SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
-            exit(EXIT_FAILURE);
-        }
-
-		// the keep alive time
-        if(setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &idle, sizeof(int)) < 0)
-        {
-            SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
-            exit(EXIT_FAILURE);
-        }
-
-		// the interval between keep alive probes
-        if(setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &intvl, sizeof(int)) < 0)
-        {
-            SHOW_LOG(stderr, port, MSG_ERR, "Socket error, fail to set alive time.\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-}
-#endif // SUPPORT_TCP_KEEPALIVE
 
