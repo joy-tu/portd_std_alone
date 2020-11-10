@@ -48,7 +48,7 @@ extern char Gtty_name[128];
 	do{\
 		if(load_item(#name, &CFG(name)) < 0)\
 		{\
-			SHOW_LOG(stderr, Grun_conf.port, MSG_ERR, "Invalid configuration %s.\n", #name); \
+			printf("Invalid configuration %s.\n", #name); \
 		}\
 	}while(0)
 

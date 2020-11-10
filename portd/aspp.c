@@ -20,14 +20,10 @@
 #include <fcntl.h>
 #include <debug.h>
 #include <stdio.h>
-#include "../message.h"
 
 #define TMP_LEN 	512
-// for DSCI command 0x14 (dsc_GetNetstat), because we do not have tcp_state function now.
 aspp_socket_stat Gaspp_socket_stat[DCF_MAX_SERIAL_PORT][TCP_LISTEN_BACKLOG];
-
 extern struct port_data Gport;
-//extern int portd_terminate[MAX_PORTS];
 
 static int aspp_notify_data(int port, unsigned char* buf);
 
@@ -117,55 +113,27 @@ void aspp_open_data_listener(ASPP_SERIAL *detail)
 
     if ((detail->fd_data_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error.\n", detail->data_port_no);
-        exit(EXIT_FAILURE);
+        printf("TCP data port %d socket error.\n", detail->data_port_no);
+        return;
     }
-
 
     sin.sin_family = AF_INET;                       /* host byte order */
     sin.sin_port = htons((short)detail->data_port_no);		/* short, network byte order        */
     sin.sin_addr.s_addr = INADDR_ANY;
     /*sin.sin_len = sizeof(sin);*/
 
-/*
-    {
-        int data=0;
-        optlen = sizeof(data);
-        getsockopt(detail->fd_data_listen, SOL_SOCKET, SO_RCVBUF, (void *)&data, (socklen_t *)&optlen);
-        printf("get SO_RCVBUF data = %d\n", data);
-
-        optlen = sizeof(data);
-        getsockopt(detail->fd_data_listen, SOL_SOCKET, SO_SNDBUF, (void *)&data, (socklen_t *)&optlen);
-        printf("get SO_SNDBUF data = %d\n", data);
-
-        data = DCF_SOCK_BUF;
-        while(setsockopt(detail->fd_data_listen, SOL_SOCKET, SO_RCVBUF, (char *)&data, sizeof(data)) == -1)
-            usleep(100000);
-
-        data = DCF_SOCK_BUF;
-        while(setsockopt(detail->fd_data_listen, SOL_SOCKET, SO_SNDBUF, (char *)&data, sizeof(data)) == -1)
-            usleep(100000);
-    }
-*/
     yes = 1;
     if (setsockopt(detail->fd_data_listen, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error.\n", detail->data_port_no);
-        exit(EXIT_FAILURE);
+        printf("TCP data port %d socket error.\n", detail->data_port_no);
+        return;
     }
-
-#if 0
-    /* TODO: set reuse port. */
-    yes = 1;
-    while (setsockopt(detail->fd_data_listen, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(int)) == -1)
-        usleep(100000);
-#endif
 
     if (bind(detail->fd_data_listen, (struct sockaddr *) &sin, sizeof(sin)) == -1)
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error, please check if the port has been used.\n",
+        printf("TCP data port %d socket error, please check if the port has been used.\n",
                     detail->data_port_no);
-        exit(EXIT_FAILURE);
+        return;
     }
 
 #ifdef DISABLE_LINUX_SYN_BACKLOG
@@ -174,8 +142,8 @@ void aspp_open_data_listener(ASPP_SERIAL *detail)
 	if (listen(detail->fd_data_listen, detail->backlog) == -1)
 #endif
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP data port %d socket error.\n", detail->data_port_no);
-        exit(EXIT_FAILURE);
+        printf("TCP data port %d socket error.\n", detail->data_port_no);
+        return;
     }
 }
 
@@ -190,8 +158,8 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
 
     if ((detail->fd_cmd_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error.\n", detail->cmd_port_no);
-        exit(EXIT_FAILURE);
+        printf("TCP command port %d socket error.\n", detail->cmd_port_no);
+        return;
     }
 
     sin.sin_family = AF_INET;                       /* host byte order                  */
@@ -211,8 +179,8 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
     yes = 1;
     if (setsockopt(detail->fd_cmd_listen, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error.\n", detail->cmd_port_no);
-        exit(EXIT_FAILURE);
+        printf("TCP command port %d socket error.\n", detail->cmd_port_no);
+        return;
     }
 
 #if 0
@@ -227,9 +195,9 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
 
     if (bind(detail->fd_cmd_listen, (struct sockaddr *) &sin, sizeof(sin)) == -1)
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error, please check if the port has been used.\n",
+        printf("TCP command port %d socket error, please check if the port has been used.\n",
                     detail->cmd_port_no);
-        exit(EXIT_FAILURE);
+        return;
     }
 
 #ifdef DISABLE_LINUX_SYN_BACKLOG
@@ -238,8 +206,8 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
 	if (listen(detail->fd_cmd_listen, detail->backlog) == -1)
 #endif
     {
-        SHOW_LOG(stderr, port, MSG_ERR, "TCP command port %d socket error.\n", detail->cmd_port_no);
-        exit(EXIT_FAILURE);
+        printf("TCP command port %d socket error.\n", detail->cmd_port_no);
+        return;
     }
 }
 
@@ -428,13 +396,8 @@ void aspp_main(int port, int is_driver)
         }
         count++;
 #endif
-#if 0    	
-    	serial_data_buffered = delimiter_check_buffered(port);
 
         aspp_setup_fd(port, &tv, &rfds, &wfds, &maxfd, port_buffering_flag, serial_data_buffered);
-#else
-        aspp_setup_fd(port, &tv, &rfds, &wfds, &maxfd, port_buffering_flag, serial_data_buffered);
-#endif
         for (ci=0; ci < detail->backlog; ci++)
         {
             if (realtty)
@@ -900,7 +863,6 @@ int aspp_recvfunc(int port, int fd_net, char *buf, int len)
     detail = (struct aspp_serial *) ptr->detail;
 
     nbytes = recv(fd_net, buf, len, 0);
-    //SHOW_LOG(stderr, port, MSG_ERR, "Joy %s-%d, nbytes=%d\r\n", __func__, __LINE__, nbytes);
 
     if (nbytes == -1)
         nbytes = 0;
@@ -1683,9 +1645,8 @@ int aspp_open_serial(int port)
 
     if ((detail->fd_port = sio_open(port)) < 0)
     {
-        SHOW_LOG(stderr, port, MSG_ERR,
-                    "Fail to open serial port %d, please check if the serial port has been opened.\n", port);
-        exit(EXIT_FAILURE);
+        printf("Fail to open serial port %d, please check if the serial port has been opened.\n", port);
+        return;
     }
 
     sio_DTR(port, 0);             /* DTR off at init state */

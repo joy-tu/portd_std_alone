@@ -18,43 +18,16 @@
 #include <netinet/in.h>
 #include <portd.h>
 #include <sio.h>
-//#include <datalog.h>
 #include "aspp.h"
-#include "../message.h"
-
-//#define _DEBUG
-#ifdef _DEBUG
-#define PORTD_DBG printf
-#else
-#define PORTD_DBG(...)
-#endif // _DEBUG
 
 struct port_data Gport;
 
-static volatile int portd_received_sighup = 0;
 volatile int portd_terminate = 0;
 static int portd_init(int port_idx);
 static void portd(int port_idx);
 static void portd_exit(int port_idx);
-
 extern int delimiter_init(int port, int has_delimiter, int has_buffering);
 extern void delimiter_exit(int port);
-
-static void sighup_restart(int port_idx)
-{
-	portd_received_sighup = 0;
-	portd_setexitflag(port_idx, 1);
-}
-
-static void usage()
-{
-    fprintf(stdout, "Usage: ./portd [options]\n");
-    fprintf(stdout, "Options:\n");
-    fprintf(stdout, "Start TCP server mode for the specific port: -p \"port\"\n");
-    fprintf(stdout, "Input config file:                           -f \"config file\"\n");
-    fprintf(stdout, "Show software version:                       -v\n");
-    fprintf(stdout, "How to use this tool:                        -h\n");
-}
 
 int main(int argc, char *argv[])
 {
@@ -62,8 +35,8 @@ int main(int argc, char *argv[])
 
 	load_runtime_conf(port_idx);
 	if (port_idx <= 0) {
-		SHOW_LOG(stderr, -1, MSG_ERR, "Invalid port specified!\n");
-		exit(EXIT_FAILURE);
+		printf("Invalid port specified!\n");
+		return -1;
     	}
 
 	while( 1 ) {
@@ -72,13 +45,12 @@ int main(int argc, char *argv[])
 			continue;
 		}
 		portd_terminate = 0;
-		portd_received_sighup = 0;
 		portd(port_idx);
 
 		portd_exit(port_idx);
 	}
 
-	exit(EXIT_SUCCESS);
+	return 0;
 }
 
 static int portd_init(int port_idx)
@@ -103,8 +75,6 @@ static int portd_init(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_REALCOM) // RealCOM
             {
-                PORTD_DBG("%s(), RealCOM\n", __FUNCTION__);
-
 		  delimiter_init(port_idx, 1, 1);
                 ptr->detail = (struct aspp_serial*) malloc(sizeof(struct aspp_serial));
                 if(ptr->detail == NULL)
@@ -118,7 +88,6 @@ static int portd_init(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_TCPSERVER) // TCP Server
             {
-                PORTD_DBG("%s(), TCP server\n", __FUNCTION__);
                 delimiter_init(port_idx, 1, 1);
                 ptr->detail = (struct aspp_serial*) malloc(sizeof(struct aspp_serial));
                 if(ptr->detail == NULL)
@@ -149,8 +118,7 @@ static void portd(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_REALCOM) // RealCOM
             {
-                SHOW_LOG(stderr, port_idx, MSG_INFO, "Start port %d as RealCOM mode\n", port_idx);
-                PORTD_DBG("%s(), RealCOM\n", __FUNCTION__);
+                printf("Start port %d as RealCOM mode\n", port_idx);
 		  pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx);
             }
             break;
@@ -159,29 +127,18 @@ static void portd(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_TCPSERVER) // TCP Server
             {
-                SHOW_LOG(stderr, port_idx, MSG_INFO, "Start port %d as TCP server mode\n", port_idx);
-                PORTD_DBG("%s(), TCP server\n", __FUNCTION__);
+                printf("Start port %d as TCP server mode\n", port_idx);
                 pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)(port_idx|0x8000));
             }
             break;
         }
         default:
-            PORTD_DBG("%s(), unknown opmode\n", __FUNCTION__);
             return;
             break;
     }
 
     while (1)
     {
-        if (portd_received_sighup)
-        {
-            portd_terminate = 1;
-            if(ptr->thread_id)
-                pthread_join(ptr->thread_id, NULL);
-
-            sighup_restart(port_idx);
-            return;
-        }
         sleep(1);                    /* always sleep */
     }
 }
@@ -199,8 +156,6 @@ static void portd_exit(int port_idx)
     }
 
     delimiter_exit(port_idx);
-
-    PORTD_DBG("portd_exit(): port = %d\n", port_idx);
 }
 
 static int __tcp_info(int fd, int mode);
@@ -326,7 +281,6 @@ void portd_wait_empty(int port, int fd_port, unsigned long timeout)
     int     n, i;
     unsigned long   t;
 
-	PORTD_DBG("portd_wait_empty(): port = %d\n", port);
     if ( (n = (int)sio_oqueue(port)) <= 0 ) /* bugfix: < 0 means error port */
         return;
 

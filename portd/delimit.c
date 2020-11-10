@@ -21,7 +21,6 @@
 #include <delimit.h>
 #include <sio.h>
 #include "aspp.h"
-#include "../message.h"
 
 #define DK_FORCE_TX_SIZE  DK_BUFFER_SIZE_S2E  /* force transmit if buffered data size exceeds this */
 
@@ -41,7 +40,7 @@ int delimiter_init(int port, int has_delimiter, int has_buffering)
 	Gdktab = (fdkparam_t) malloc( sizeof(dkparam) );
 	if( Gdktab == (fdkparam_t) NULL )
 	{
-		SHOW_LOG(stderr, port, MSG_ERR, "Memory not enough.\n");
+		printf("Memory not enough.\n");
 		exit(EXIT_FAILURE);
 	}
 	dp = (fdkparam_t) Gdktab;
@@ -59,7 +58,7 @@ int delimiter_init(int port, int has_delimiter, int has_buffering)
 	dp->s2e_buf = malloc(dp->s2e_size);
 	if ((dp->s2e_buf == NULL) && (dp->s2e_size > DK_BUFFER_SIZE_S2E))
 	{
-		SHOW_LOG(stderr, port, MSG_ERR, "No memory for port %d buffering!\n", port);
+		printf("No memory for port %d buffering!\n", port);
 		dp->s2e_size = DK_BUFFER_SIZE_S2E;
 		exit(EXIT_FAILURE);
 		//dp->s2e_buf = malloc(dp->s2e_size);

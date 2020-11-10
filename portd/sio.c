@@ -22,7 +22,6 @@
 #include <debug.h>
 #include <sio.h>
 #include <portd.h>
-#include "../message.h"
 #include "../config.h"
 
 //
