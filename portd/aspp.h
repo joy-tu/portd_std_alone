@@ -183,8 +183,4 @@ void aspp_close_serial(int port);
 void aspp_update_lasttime(int port);
 int aspp_tcp_iqueue(int fd);
 void aspp_tcp_flush_iqueue(int port, int fd);
-
-void check_to_ser(int checklen, char* buf, int buflen);
-void check_from_ser(int checklen, char* buf, int buflen);
-
 #endif

@@ -58,64 +58,14 @@ static void usage()
 
 int main(int argc, char *argv[])
 {
-    extern char *optarg;
-    int daemon=1;
-    int port_idx=0;
-    char buf[30];
-    int ret;
-    u_int pid;
-    if( argc < 2 ) // at least include program name and option 
-    {
-        usage(argv[0]);
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        int opt;
-        while( (opt = getopt(argc, argv, "f:p:dvh") ) != -1 )
-        {
-            switch (opt)
-            {
-                case 'f':
-                    if (config_parser(optarg) < 0)
-                        exit(EXIT_FAILURE);
+	int port_idx=1;
 
-                    break;
-                case 'p':
-                    if (argc < 3)
-                    {
-                        usage(argv[0]);
-                        exit(EXIT_FAILURE);
-                    }
-
-                    port_idx = atoi(optarg);
-                    if (get_ttyname(port_idx) < 0)
-                        exit(EXIT_FAILURE);
-
-                    break;
-                case 'v':
-//                    sys_getVersionString(buf, sizeof(buf));
-//                    fprintf(stdout, "%s\n", buf);
-
-                    exit(EXIT_SUCCESS);
-                case 'h':
-                    usage(argv[0]);
-                    exit(EXIT_SUCCESS);
-                case 'd':
-                    daemon = 0;
-                    break;
-            }
-        }
-    }
-
-    load_runtime_conf(port_idx);
+	load_runtime_conf(port_idx);
 	if (port_idx <= 0) {
 		SHOW_LOG(stderr, -1, MSG_ERR, "Invalid port specified!\n");
 		exit(EXIT_FAILURE);
     	}
-#ifdef SUPPORT_PORTD_LOG
-	log_init(port_idx);
-#endif /* */
+
 	while( 1 ) {
 		if (!portd_init(port_idx)) {
 			sleep(1);    /* sleep 1 second */

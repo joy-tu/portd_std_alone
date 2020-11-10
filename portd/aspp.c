@@ -31,26 +31,6 @@ extern struct port_data Gport;
 
 static int aspp_notify_data(int port, unsigned char* buf);
 
-void check_to_net(int checklen, char* buf, int buflen)
-{
-    return;
-}
-
-void check_from_net(int checklen, char* buf, int buflen)
-{
-    return;
-}
-
-void check_to_ser(int checklen, char* buf, int buflen)
-{
-    return;
-}
-
-void check_from_ser(int checklen, char* buf, int buflen)
-{
-    return;
-}
-
 void *aspp_start(void* arg)
 {
     struct port_data *ptr;
@@ -106,8 +86,6 @@ void *aspp_start(void* arg)
     {
         aspp_main(port, is_driver);
 
-//		port_buffering_check_restart(port);
-
         for (i=0; i<detail->backlog; i++)
         {
             if ((detail->flag[i] & FLAG_DATA_UP) && (detail->fd_data[i] > 0)) {
@@ -120,7 +98,6 @@ void *aspp_start(void* arg)
         }
 	 aspp_close_serial(port);
 
-        //if (portd_terminate[port-1])
         if(portd_getexitflag(port))
             break;
     }
@@ -900,7 +877,6 @@ int	aspp_sendfunc(int port, int fd_net, char *buf, int len)
                     }
                 }
                 detail->data_sent[i] = nbytes;	/* Albert.20120103: add */
-                check_to_net(nbytes, buf, len);
 
                 max_nbytes = MAX(nbytes, max_nbytes);
                 aspp_update_lasttime(port);
@@ -925,8 +901,6 @@ int aspp_recvfunc(int port, int fd_net, char *buf, int len)
 
     nbytes = recv(fd_net, buf, len, 0);
     //SHOW_LOG(stderr, port, MSG_ERR, "Joy %s-%d, nbytes=%d\r\n", __func__, __LINE__, nbytes);
-
-    check_from_net(nbytes, buf, len);
 
     if (nbytes == -1)
         nbytes = 0;

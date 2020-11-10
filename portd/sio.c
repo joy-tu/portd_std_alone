@@ -50,8 +50,8 @@
 #define	MOXA_SET_SPECIAL_BAUD_RATE	(MOXA + 0x64)
 #define	MOXA_GET_SPECIAL_BAUD_RATE	(MOXA + 0x65)
 
-#define TTY_NAME Gtty_name
-
+//#define TTY_NAME Gtty_name
+#define TTY_NAME "/dev/ttyMXUSB0"
 #ifdef SUPPORT_INTERNAL_UART
 #define SERIAL_PROC_FILE        "/proc/tty/driver/ttymxc"
 #endif // SUPPORT_INTERNAL_UART

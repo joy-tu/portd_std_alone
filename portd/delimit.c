@@ -6,10 +6,6 @@
 /*****************************************************************************/
 /* Company      : MOXA Technologies Co., Ltd.                                */
 /* Filename     : delimit.c                                                  */
-/* Description  :                                                            */
-/* Product      : Secured Serial Device Server                               */
-/* Programmer   : Shinhsy Shaw                                               */
-/* Date         : 2003-07-22                                                 */
 /*****************************************************************************/
 #ifndef _DELIMIT_C
 #define _DELIMIT_C
@@ -24,7 +20,6 @@
 #include <portd.h>
 #include <delimit.h>
 #include <sio.h>
-#include <datalog.h>
 #include "aspp.h"
 #include "../message.h"
 
@@ -190,7 +185,6 @@ int delimiter_read_1(int port, int send_buffered_data)
 
 	if ( (n = dp->sio_read(port, (char *)p, max)) > 0 )
 	{
-		check_from_ser(n, (char*)p, max);
 		dp->lasttime = sys_clock_ms();
 		dp->s2e_len += n;
 		dp->s2e_wndx += n;
@@ -241,7 +235,6 @@ int delimiter_write_1(int port)
 	{
 	    if ((n2 = dp->sio_write(port, (char*)p, n)) > 0)
 	    {
-		    check_to_ser(n2, (char*)p, n);
 		    dp->e2s_len -= n2;
 
 		    if (dp->e2s_len == 0)
