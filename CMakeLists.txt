@@ -14,7 +14,7 @@ zephyr_library_sources(
     src/config_parser.c
     src/delimit.c
     src/portd.c
-    #    src/sio.c
+    src/mx_sio.c
     src/sysfakeconf.c
 )
 

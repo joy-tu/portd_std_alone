@@ -7,8 +7,8 @@
 
 #include <stdlib.h>
 #include <errno.h>
-#include <netinet/tcp.h>
-#include <sys/ioctl.h>
+#include <posix/netinet/tcp.h>
+#include <posix/sys/ioctl.h>
 
 #ifndef MAX
 #define MAX(a,b) ((a > b) ? a : b)

@@ -32,7 +32,7 @@ extern void delimiter_exit(int port);
 int portd_start(void)
 {
 	int port_idx=1;
-
+	printf("Portd_Start\r\n");
 	load_runtime_conf(port_idx);
 	if (port_idx <= 0) {
 		printf("Invalid port specified!\n");
@@ -103,10 +103,12 @@ static int portd_init(int port_idx)
 
     return 1;
 }
-
+#define PORTD_STACK_SIZE 4096 * 10 
+K_THREAD_STACK_DEFINE(portd_stack, PORTD_STACK_SIZE);
 static void portd(int port_idx)
 {
     struct port_data *ptr;
+    pthread_attr_t portd_attr;
 
     ptr = &Gport;
 
@@ -119,7 +121,10 @@ static void portd(int port_idx)
             if (ptr->application == CFG_OPMODE_REALCOM) // RealCOM
             {
                 printf("Start port %d as RealCOM mode\n", port_idx);
-		  pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx);
+		(void)pthread_attr_init(&portd_attr);
+		(void)pthread_attr_setstack(&portd_attr, &portd_stack,
+				    PORTD_STACK_SIZE);
+		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start, (void *)port_idx);
             }
             break;
         }
