@@ -209,6 +209,7 @@ int delimiter_write(int port)
 	dp = (fdkparam_t) Gdktab;
 	if (dp->e2s_len == 0)
 		return 0;
+        printf("Joy calling delimiter_write_1\r\n");
 
 	return dp->del_write(port);
 }
@@ -227,11 +228,15 @@ int delimiter_write_1(int port)
             n = dp->e2s_len;
 
 	ofree = sio_ofree(port);
+	printf("Joy doing  delimiter_write_1, ofree=%d, n = %d\r\n", ofree, n);
 	if (n > ofree)
             n = ofree;
 
+
 	if (n > 0)
 	{
+	        printf("Joy calling sio_write\r\n");
+
 	    if ((n2 = dp->sio_write(port, (char*)p, n)) > 0)
 	    {
 		    dp->e2s_len -= n2;
