@@ -406,7 +406,7 @@ printf("Joy %s-%d\r\n", __func__, __LINE__);
                     if ((j = recv(detail->fd_cmd[i], cmdbuf, CMD_LEN, 0)) > 0)
                     {
                                 printf("Joy Recv Cmd Data = %x,%x\r\n", cmdbuf[0], cmdbuf[1]);
-						//if (detail->serial_flag)
+						if (detail->serial_flag)
                             if ((j = aspp_command(port, i, cmdbuf, j)) > 0)
                                 send(detail->fd_cmd[i], cmdbuf, j, 0);
                     }
@@ -463,7 +463,8 @@ printf("Joy %s-%d\r\n", __func__, __LINE__);
                     }
                     else
                     {
-  
+                            if (sio_ofree(port) < TMP_LEN)
+                            detail->port_write_flag = 1;
                     }
                 }
             }
@@ -1403,6 +1404,7 @@ void aspp_close_serial(int port)
         sio_set_rts(port, rtsdtr & 1);
     }
 #endif // SUPPORT_CONNECT_GOESDOWN
+printf("Joy %s-%d calling sio_close\r\n", __func__, __LINE__);
     sio_close(port);
     detail->serial_flag = 0;
 }
