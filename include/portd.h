@@ -7,7 +7,7 @@
 #ifndef _PORTD_H_
 #define _PORTD_H_
 
-#define DISABLE_LINUX_SYN_BACKLOG 1
+#define DISABLE_LINUX_SYN_BACKLOG 0
 
 #define DSPORTD_PID_FILE "/run/portd%02d.pid"
 

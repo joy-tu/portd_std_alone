@@ -212,6 +212,43 @@ int delimiter_write(int port)
 
 	return dp->del_write(port);
 }
+int	sendback(int port, int fd_net, char *buf, int len)
+{
+	fdkparam_t	dp;
+	unsigned char	*p;
+	int n, n2, ofree;
+
+	dp = (fdkparam_t) Gdktab;
+	p = dp->e2s_buf + dp->e2s_rndx;
+	n = DK_BUFFER_SIZE_E2S - dp->e2s_rndx;
+
+	if (n > dp->e2s_len)
+            n = dp->e2s_len;
+
+	if (n > 0)
+	{
+	    if ((n2 = send(fd_net, (char*)p, n, 0)) > 0)
+//	    if ((n2 = dp->sio_write(port, (char*)p, n)) > 0)
+	    {
+		    dp->e2s_len -= n2;
+
+		    if (dp->e2s_len == 0)
+		    {
+			    dp->e2s_rndx = 0;
+			    dp->e2s_wndx = 0;
+		    }
+		    else
+		    {
+		        dp->e2s_rndx += n2;
+			    if (dp->e2s_rndx == DK_BUFFER_SIZE_E2S)
+			    {
+				    dp->e2s_rndx = 0;
+			    }
+		    }
+    	}
+    }
+	return dp->e2s_len;
+}
 
 int delimiter_write_1(int port)
 {
@@ -349,12 +386,13 @@ int delimiter_recv(int port, int fd_net)
 	{
 		return -1;
 	}
-
+#ifdef UART_BURN
 	if (dp->e2s_len >= DK_BUFFER_SIZE_E2S)
 	{
 		delimiter_write(port);
 		return dp->e2s_len;
 	}
+#endif	
 	p = dp->e2s_buf + dp->e2s_wndx;
 
 	if (dp->e2s_wndx >= dp->e2s_rndx)
@@ -381,9 +419,12 @@ int delimiter_recv(int port, int fd_net)
 
 	if (dp->e2s_len == 0)
 	    return 0;
-
+#ifdef UART_BURN
 	delimiter_write(port);
-
+#else
+	sendback(dp->port, dp->fd_net[0], (char *)p, max);
+//	dp->sendfunc(dp->port, dp->fd_net[0], (char *)p, max);
+#endif
 	return dp->e2s_len;
 }
 

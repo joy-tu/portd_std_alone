@@ -11,7 +11,6 @@
 #ifndef _ASPP_C
 #define _ASPP_C
 #endif
-
 #include <header.h>
 #include <common.h>
 #include <sio.h>
@@ -42,11 +41,8 @@ void *aspp_start(void* arg)
     ptr = &Gport;
 
     detail = (struct aspp_serial *) ptr->detail;
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-	detail->backlog = Scf_getMaxConns(port)+1;
-#else
 	detail->backlog = Scf_getMaxConns(port);
-#endif
+
     detail->ctrlflag = 0;
 
     if (Scf_getSkipJamIP(port))
@@ -71,17 +67,14 @@ void *aspp_start(void* arg)
     /* Data Port */
     aspp_open_data_listener(detail);
 
-    	/* open/close serial port so that serial settings monitor web page can 
-    	show setting values instead of default values */
     aspp_open_serial(port);
     sio_close(port);
     sio_DTR(port, 0);		 	/* DTR off */
     sio_RTS(port, 0);			/* RTS off */
-
     while (1)
     {
         aspp_main(port, is_driver);
-
+printf("Joy exit\r\n");
         for (i=0; i<detail->backlog; i++)
         {
             if ((detail->flag[i] & FLAG_DATA_UP) && (detail->fd_data[i] > 0)) {
@@ -93,7 +86,6 @@ void *aspp_start(void* arg)
 	    }
         }
 	 aspp_close_serial(port);
-
         if(portd_getexitflag(port))
             break;
     }
@@ -136,11 +128,7 @@ void aspp_open_data_listener(ASPP_SERIAL *detail)
         return;
     }
 
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-	if (listen(detail->fd_data_listen, 1) == -1)
-#else
 	if (listen(detail->fd_data_listen, detail->backlog) == -1)
-#endif
     {
         printf("TCP data port %d socket error.\n", detail->data_port_no);
         return;
@@ -200,11 +188,7 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
         return;
     }
 
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-	if (listen(detail->fd_cmd_listen, 1) == -1)
-#else
 	if (listen(detail->fd_cmd_listen, detail->backlog) == -1)
-#endif
     {
         printf("TCP command port %d socket error.\n", detail->cmd_port_no);
         return;
@@ -243,7 +227,7 @@ void aspp_setup_fd(int port, struct timeval *tv, fd_set *rfds, fd_set *wfds, int
 
     FD_ZERO(rfds);
     FD_ZERO(wfds);
-
+#ifdef UART_BURN
     if (detail->serial_flag)
     {
         *maxfd = detail->fd_port;
@@ -255,7 +239,7 @@ void aspp_setup_fd(int port, struct timeval *tv, fd_set *rfds, fd_set *wfds, int
     }
     else
         *maxfd = 0;
-
+#endif	
     if ((detail->connect_count < detail->backlog) && (detail->fd_data_listen >= 0))
     {
         FD_SET(detail->fd_data_listen, rfds);
@@ -267,16 +251,22 @@ void aspp_setup_fd(int port, struct timeval *tv, fd_set *rfds, fd_set *wfds, int
         FD_SET(detail->fd_cmd_listen, rfds);
         *maxfd = MAX(detail->fd_cmd_listen, *maxfd);
     }
+
+	
     for (i=0; i< detail->backlog; i++)
     {
-        /* data channel */
+#if 1
+       /* data channel */
         if (detail->flag[i] & FLAG_DATA_UP)
         {
             if (!detail->port_write_flag)
                 FD_SET(detail->fd_data[i], rfds);
+#ifdef UART_BURN
 
             if (detail->net_write_flag || serial_buffered)
                 FD_SET(detail->fd_data[i], wfds);
+#endif		
+
         }	
 #if 0		
             if ((detail->fd_cmd[i] > 0) && (tcp_state(detail->fd_cmd[i]) != TCP_ESTABLISHED)) {
@@ -300,10 +290,19 @@ void aspp_setup_fd(int port, struct timeval *tv, fd_set *rfds, fd_set *wfds, int
 
         if (detail->flag[i] & FLAG_CMD_UP)
             *maxfd = MAX(detail->fd_cmd[i], *maxfd);
+#else
+        if (detail->flag[i] & FLAG_DATA_UP)
+        {
+             FD_SET(detail->fd_data[i], rfds);
+            *maxfd = MAX(detail->fd_data[i], *maxfd);
+        }    
+        if (detail->flag[i] & FLAG_CMD_UP)
+        {
+            FD_SET(detail->fd_cmd[i], rfds);
+            *maxfd = MAX(detail->fd_cmd[i], *maxfd);
+        }
+#endif		
     }
-
-    //*rfds = rfd;
-    //*wfds = wfd;
 }
 
 void aspp_main(int port, int is_driver)
@@ -335,11 +334,9 @@ void aspp_main(int port, int is_driver)
     detail->port_write_flag = 0;
     detail->old_hold = 0;
     detail->old_msr = 0;
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-    realtty = ((detail->backlog-1) > 1)? 0 : 1;
-#else
+	detail->backlog = 1;
     realtty = (detail->backlog > 1)? 0 : 1;
-#endif
+
     detail->fd_port = -1;  /* was set in aspp_start() if port buffering is enabled*/
 
     for (i=0; i< detail->backlog; i++)
@@ -377,186 +374,13 @@ void aspp_main(int port, int is_driver)
 
     /******** MAIN LOOP ********/
     //while (!portd_terminate[port-1] && !detail->finish)
+
     while( !portd_getexitflag(port) && !detail->finish )
     {
-#if 1
-        static int count=0;
-        static unsigned long t=0;
-        static int sleep_flag=0;
-
-        if((sys_clock_ms()-t) > 1000)
-        {
-            //printf("count = %d\r\n", count);
-            if(count > 200)
-                sleep_flag = 2;
-            else if(sleep_flag > 0)
-                sleep_flag--;
-            count = 0;
-            t = sys_clock_ms();
-        }
-        count++;
-#endif
-
         aspp_setup_fd(port, &tv, &rfds, &wfds, &maxfd, port_buffering_flag, serial_data_buffered);
-        for (ci=0; ci < detail->backlog; ci++)
+
+        if (select(maxfd+1, &rfds, &wfds, NULL, NULL) <= 0)
         {
-            if (realtty)
-            {
-                /* Aspp Command => Wait Oqueue */
-                if (detail->pollflag[ci])
-                {
-                    long len = sio_oqueue(port) + aspp_tcp_iqueue(detail->fd_data[ci]);
-                    if ((detail->polltime[ci] <= sys_clock_ms()) || (len == 0L))
-                    {
-                        detail->polltime[ci] = 0;
-                        detail->pollflag[ci] = 0;
-                        cmdbuf[0] = D_ASPP_CMD_NOT_OFREE;
-                        cmdbuf[1] = 2;
-                        /**(int *)(&tmp[2]) = (int) len;*/
-                        cmdbuf[2] = (unsigned char) (len & 0x00FF);
-                        cmdbuf[3] = (unsigned char) ((len & 0xFF00) >> 8);
-                        send(detail->fd_cmd[ci], cmdbuf, 4, 0);
-
-                        tv.tv_sec = 0;
-                        tv.tv_usec = 5*1000L;
-                    }
-                }
-            }
-        }
-        if (select(maxfd+1, &rfds, &wfds, NULL, &tv) <= 0)
-        {
-            if (detail->serial_flag)
-            {
-                detail->notify_flag = aspp_notify_data(port, (unsigned char *) &(detail->notify_buf[1]));
-                if (detail->notify_flag > 0)
-                {
-                    if (detail->notify_buf[1] & 0x10)
-                        detail->break_count++;
-                    detail->data_status |= (detail->notify_buf[1] & 0x0F);
-                }
-
-                if ((n = delimiter_poll(port)) > 0)
-                {
-                    tv.tv_sec = 0;
-                    tv.tv_usec = 5*1000L;
-                }
-                else
-                {
-                    tv.tv_sec = 0L;
-                    tv.tv_usec = 10*1000L;
-                }
-				/* Bugfix for w1 a-test (jperf-2.0.2) start */
-				for(ci=0; ci < detail->backlog; ci++)
-                {
-                    if (detail->fd_data[ci] >= 0 && tcp_state(detail->fd_data[ci]) == 0)
-                    {
-                        if((detail->flag[ci] & FLAG_CMD_UP) && (detail->fd_data[ci] >= 0)) {
-                            	aspp_close_cmd(port, ci);
-                        }
-
-                        aspp_flush_data(port, detail->fd_port, detail->fd_data[ci], 2);
-                        if (detail->fd_data[ci] != -1){
-                        	aspp_close_data(port, ci);
-                        }
-                        sio_flush(port, FLUSH_ALL);
-                        sio_fifo(port, Scf_getAsyncFifo(port));                   /* FIFO */                        
-                    }
-                }
-				/* Bugfix for w1 a-test (jperf-2.0.2) end */
-
-                /* Inactivity time */
-                if (!detail->mode)	/* detail->mode ==> 1 : driver mode, 0 : TCP Server Mode */
-                {
-                    aspp_check_inactivity(port, n, idletime);
-                }
-                else
-                {
-                    for (ci=0; ci < detail->backlog; ci++)
-                    {
-						if (!(detail->flag[ci] & FLAG_CMD_UP)) /* Albert.20120102: add */
-							continue;
-                        if (realtty)
-                        {
-                            /* ASPP command => Flush */
-                            if (detail->flag[ci] & FLAG_FLUSH_DATA)
-                            {
-                                unsigned long t;
-                                int x = 0;
-                                if (detail->flag[ci] & FLAG_FLUSH_RXDATA)
-                                    x |= 1;
-                                if (detail->flag[ci] & FLAG_FLUSH_TXDATA)
-                                    x |= 2;
-
-                                x--;
-								
-                                if (aspp_flush_data(port, detail->fd_port, detail->fd_data[ci], x) == 1)
-                                    t = 0;
-                                else
-                                    t = sys_clock_ms() - detail->flush_wait_time[ci];
-
-                                if (t >= 0L)
-                                {
-                                    aspp_flush_reply(realtty, cmdbuf, detail->fd_data[ci]);
-
-                                    send(detail->fd_cmd[ci], cmdbuf, 6, 0);
-                                    detail->flag[ci] &= ~FLAG_FLUSH_DATA;
-
-                                    tv.tv_sec = 0;
-                                    tv.tv_usec = 5*1000L;
-                                }
-                            }
-                        } /* end of if(realtty) */
-
-                        /* NPPI event notify and alive polling */
-                        if ((detail->flag[ci] & FLAG_SET_NOTIFY))
-                        {
-                            unsigned long  t;
-
-                            t = sys_clock_ms() - detail->last_time[ci];
-
-                            if ((t > 40000) || ((detail->notify_count[ci] > 0) && ((sys_clock_ms() - detail->last_time[ci]) >= 3000)))
-                            {
-                                if (detail->notify_count[ci] > 3)
-                                {
-                                    detail->notify_count[ci] = 0;
-					if (detail->fd_cmd[ci] != -1){
-                                    aspp_close_cmd(port, ci);
-					}
-					if (detail->fd_data[ci] != -1){
-                                    aspp_close_data(port, ci);	/* Albert.20120102 */
-					}
-                                }
-                                else
-                                {
-                                    detail->id[ci]++;
-                                    if (detail->id[ci] == 0)
-                                        detail->id[ci]++;
-                                    cmdbuf[0] = D_ASPP_CMD_ALIVE;
-                                    cmdbuf[1] = 1;
-                                    cmdbuf[2] = detail->id[ci];
-                                    aspp_update_lasttime(port);
-                                    detail->notify_count[ci]++;
-                                    send(detail->fd_cmd[ci], cmdbuf, 3, 0);
-                                }
-                            }
-                        }
-
-                        if (detail->notify_flag > 0)
-                        {
-                            detail->notify_buf[3] |= 0x80;		/* 0x80, 0 for old version, 1 for new version */
-                            detail->notify_buf[0] = D_ASPP_RSP_NOTIFY;
-                            send(detail->fd_cmd[ci], detail->notify_buf, 4, 0);
-                            detail->break_count = 0;
-                            detail->data_status = 0;
-                        }
-                    } /* end of for(ci=0; ci < detail->backlog; ci++) */
-                } /* end of if(detail->mode) */
-            } /* if(detail->serial_flag) */
-	    else
-	    {
-                tv.tv_sec = 0;
-                tv.tv_usec = 100*1000L;
-	    }
             continue;
         } /* if(select(maxfd+1, &rfds, &wfds, &efds, &tv) <= 0) */
 
@@ -565,51 +389,22 @@ void aspp_main(int port, int is_driver)
         {
             if (FD_ISSET(detail->fd_cmd_listen, &rfds))
             {
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-                int cmd_port_index = -1;
-                cmd_port_index = aspp_accept_cmd(port);
-
-                //fprintf(stderr, "[Debug] %s, %d...detail->connect_count is %d, detail->cmd_connect_count is %d, detail->backlog is %d\n", __FUNCTION__, __LINE__, detail->connect_count, detail->cmd_connect_count, detail->backlog);
-
-                if(detail->cmd_connect_count > (detail->backlog-1))
-                {
-                	//fprintf(stderr, "[Debug] %s, %d...close cmd port %d, cmd_port_index %d\n", __FUNCTION__, __LINE__, port, cmd_port_index);
-                	aspp_close_cmd(port, cmd_port_index);
-                }
-
-                //fprintf(stderr, "[Debug] %s, %d...detail->connect_count is %d, detail->cmd_connect_count is %d, detail->backlog is %d\n", __FUNCTION__, __LINE__, detail->connect_count, detail->cmd_connect_count, detail->backlog);
-#else
                 aspp_accept_cmd(port);
-#endif
+
             }
         }
 
         /* Accept new data channel */
         if (detail->fd_data_listen >= 0)
         {
+
             if (FD_ISSET(detail->fd_data_listen, &rfds))
             {
                 if (detail->connect_count == 0 && !detail->serial_flag)
                 {
                     detail->serial_flag = aspp_open_serial(port);
-                }
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-                int data_port_index = -1;
-                data_port_index = aspp_accept_data(port);
-
-                //fprintf(stderr, "[Debug] %s, %d...detail->connect_count is %d, detail->cmd_connect_count is %d, detail->backlog is %d\n", __FUNCTION__, __LINE__, detail->connect_count, detail->cmd_connect_count, detail->backlog);
-
-                if(detail->connect_count > (detail->backlog-1))
-                {
-                	//fprintf(stderr, "[Debug] %s, %d...close data port %d, data_port_index %d\n", __FUNCTION__, __LINE__, port, data_port_index);
-                	aspp_close_data(port, data_port_index);
-                }
-
-                //fprintf(stderr, "[Debug] %s, %d...detail->connect_count is %d, detail->cmd_connect_count is %d, detail->backlog is %d\n", __FUNCTION__, __LINE__, detail->connect_count, detail->cmd_connect_count, detail->backlog);
-#else
+                }                    
                 aspp_accept_data(port);
-#endif
-
             }
         }
 
@@ -617,7 +412,6 @@ void aspp_main(int port, int is_driver)
         // Because command port might be connected alone. We must handle disconnection.
         if (!detail->serial_flag)
             continue;
-
         for (i=0; i< detail->backlog; i++)
         {
             if ((detail->flag[i] & FLAG_CMD_UP) && (detail->fd_cmd[i] > 0))
@@ -625,44 +419,31 @@ void aspp_main(int port, int is_driver)
                 if (FD_ISSET(detail->fd_cmd[i], &rfds))
                 {
                     int j;
-
                     if ((j = recv(detail->fd_cmd[i], cmdbuf, CMD_LEN, 0)) > 0)
                     {
 						if (detail->serial_flag)
                             if ((j = aspp_command(port, i, cmdbuf, j)) > 0)
                                 send(detail->fd_cmd[i], cmdbuf, j, 0);
                     }
-/* open close test fail, so mask this code */
-/*
-                    else if (j == 0)
-                        aspp_close_cmd(port, i);
-*/
-
-/*	2013/04/15 bugfix: it will cause real com can't access COMPort
-	after nport is idle and the following day */
                     else if (j <= 0) {
 			   if (detail->fd_cmd[i] != -1) {
                         	aspp_close_cmd(port, i);
-			   }
-#if 1
-			if (detail->mode == 1) { /* If RealCOM Mode */
-			   if (detail->fd_data[i] != -1) {
-                        	aspp_close_data(port, i);
-			   }
+			} if (detail->mode == 1) { /* If RealCOM Mode */
+				   if (detail->fd_data[i] != -1) {
+	                        	aspp_close_data(port, i);
+				   }
 
-			   if (detail->connect_count == 0) {
-                            detail->finish = 1;
-			   }
-			}
-#endif
+				   if (detail->connect_count == 0) {
+	                            detail->finish = 1;
+				   }
+				}
                     	}
 
                 }
             }
         }
-
         for (i=0; i< detail->backlog; i++)
-        {
+	{
             if ((detail->flag[i] & FLAG_DATA_UP) && (detail->fd_data[i] > 0))
             {
                 if (FD_ISSET(detail->fd_data[i], &rfds))
@@ -670,27 +451,31 @@ void aspp_main(int port, int is_driver)
                     int x;
 			
                     x = delimiter_recv(port, detail->fd_data[i]);
-                    aspp_update_lasttime(port);
+#ifdef UART_BURN
                     if (x < 0)
                     {
                         if (detail->flag[i] & FLAG_CMD_UP) {
-				            if (detail->fd_cmd[i] != -1) {
-                                aspp_close_cmd(port, i);
-                            }
+				if (detail->fd_cmd[i] != -1) {
+                            aspp_close_cmd(port, i);
+					}
                         }
-                        if (detail->fd_data[i] != -1) {
-                            aspp_close_data(port, i);
-                        }
+			    if (detail->fd_data[i] != -1) {
+                        aspp_close_data(port, i);
+			    	}
                         if (detail->connect_count == 0)
                             detail->finish = 1;
                     }
                     else
                     {
-                        if (sio_ofree(port) < TMP_LEN)
-                            detail->port_write_flag = 1;
-                    }
-                }
+                          if (sio_ofree(port) < TMP_LEN)
+                            detail->port_write_flag = 1;						  
 
+                    }
+#else
+#endif					
+                }
+#ifdef UART_BURN
+				
                 if (FD_ISSET(detail->fd_data[i], &wfds))
                 {
         			if (serial_data_buffered)
@@ -711,13 +496,14 @@ void aspp_main(int port, int is_driver)
                     	else
                         	detail->net_write_flag = 0;
 					}		
-                }
+                }	
+#endif				
             }
-        }
-
+        }	
+#ifdef UART_BURN
         if (FD_ISSET(detail->fd_port, &rfds))
         {
-#if 1
+#if 0
             if(sleep_flag)
             {
                 if(sio_iqueue(port) < 1000)
@@ -740,6 +526,7 @@ void aspp_main(int port, int is_driver)
             else
                 detail->port_write_flag = 0;
         }
+#endif		
     } /* End of main loop */
     delimiter_stop(port);
     portd_wait_empty(port, detail->fd_port, 3000);
@@ -792,12 +579,14 @@ int	aspp_sendfunc(int port, int fd_net, char *buf, int len)
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
 
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-    realtty = ((detail->backlog-1) > 1)? 0 : 1;
-#else
     realtty = (detail->backlog > 1)? 0 : 1;
-#endif
+#ifdef UART_BURN
+#else
+nbytes = send(detail->fd_data[0], buf, len, 0);
+max_nbytes = MAX(nbytes, max_nbytes);
 
+return max_nbytes;
+#endif
     if (!realtty)
     {
         for (i=0; i< detail->backlog; i++)
@@ -886,11 +675,7 @@ int aspp_command(int port, int conn, char *buf, int len)
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
 
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-    realtty = ((detail->backlog-1) > 1)? 0 : 1;
-#else
     realtty = (detail->backlog > 1)? 0 : 1;
-#endif
 
     i = 0;
     rsp = 0;
@@ -1527,11 +1312,8 @@ int aspp_accept_data(int port)
             break;
     }
 
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-	return i;
-#else
 	return find;
-#endif
+
 
 }
 
@@ -1585,11 +1367,7 @@ int aspp_accept_cmd(int port)
             break;
     }
 
-#ifdef DISABLE_LINUX_SYN_BACKLOG
-	return i;
-#else
 	return find;
-#endif
 
 }
 
