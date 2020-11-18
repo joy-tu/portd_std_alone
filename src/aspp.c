@@ -44,7 +44,7 @@ printf("Joy aspp_start\r\n");
 
     is_driver = ((int)arg & 0x8000) ? 0 : 1;
     port = (int)arg & ~0x8000;
-
+printf("Joy aspp_start, port =%d\r\n", port);
     memset(Gaspp_socket_stat[0], 0x0, TCP_LISTEN_BACKLOG * sizeof(aspp_socket_stat));
     ptr = &Gport;
 
@@ -243,7 +243,7 @@ void aspp_setup_fd(int port, struct timeval *tv, fd_set *rfds, fd_set *wfds, int
 
     FD_ZERO(rfds);
     FD_ZERO(wfds);
-
+#ifdef UART_BURN
     if (detail->serial_flag)
     {
         *maxfd = detail->fd_port;
@@ -255,7 +255,7 @@ void aspp_setup_fd(int port, struct timeval *tv, fd_set *rfds, fd_set *wfds, int
     }
     else
         *maxfd = 0;
-
+#endif	
     if ((detail->connect_count < detail->backlog) && (detail->fd_data_listen >= 0))
     {
         FD_SET(detail->fd_data_listen, rfds);
@@ -275,9 +275,11 @@ void aspp_setup_fd(int port, struct timeval *tv, fd_set *rfds, fd_set *wfds, int
         {
             if (!detail->port_write_flag)
                 FD_SET(detail->fd_data[i], rfds);
+#ifdef UART_BURN
 
             if (detail->net_write_flag || serial_buffered)
                 FD_SET(detail->fd_data[i], wfds);
+#endif
         }	
 #if 0		
             if ((detail->fd_cmd[i] > 0) && (tcp_state(detail->fd_cmd[i]) != TCP_ESTABLISHED)) {
@@ -396,12 +398,10 @@ void aspp_main(int port, int is_driver)
 
         aspp_setup_fd(port, &tv, &rfds, &wfds, &maxfd, port_buffering_flag, serial_data_buffered);
         
-//printf("Joy %s-%d\r\n", __func__, __LINE__);
 	 ret = select(maxfd+1, &rfds, &wfds, NULL, NULL);
         if (ret <= 0) {        
         	continue;
         } /* if(select(maxfd+1, &rfds, &wfds, &efds, &tv) <= 0) */
-//printf("Joy %s-%d, ret = %d\r\n", __func__, __LINE__, ret);
         /* Accept new cmd channel */
         if (detail->fd_cmd_listen >= 0)
         {
@@ -437,11 +437,9 @@ void aspp_main(int port, int is_driver)
                 if (FD_ISSET(detail->fd_cmd[i], &rfds))
                 {
                     int j;
-            printf("Joy Recv Cmd Data\r\n");
 
                     if ((j = recv(detail->fd_cmd[i], cmdbuf, CMD_LEN, 0)) > 0)
                     {
-                                printf("Joy Recv Cmd Data = %x,%x\r\n", cmdbuf[0], cmdbuf[1]);
 						if (detail->serial_flag)
                             if ((j = aspp_command(port, i, cmdbuf, j)) > 0)
                                 send(detail->fd_cmd[i], cmdbuf, j, 0);
@@ -458,7 +456,6 @@ void aspp_main(int port, int is_driver)
 			   if (detail->fd_cmd[i] != -1) {
                         	aspp_close_cmd(port, i);
 			   }
-#if 1
 			if (detail->mode == 1) { /* If RealCOM Mode */
 			   if (detail->fd_data[i] != -1) {
                         	aspp_close_data(port, i);
@@ -468,7 +465,6 @@ void aspp_main(int port, int is_driver)
                             detail->finish = 1;
 			   }
 			}
-#endif
                     	}
 
                 }
@@ -484,6 +480,8 @@ void aspp_main(int port, int is_driver)
                     int x;
 			
                     x = delimiter_recv(port, detail->fd_data[i]);
+#ifdef UART_BURN
+					
                     if (x < 0)
                     {
                         if (detail->flag[i] & FLAG_CMD_UP) {
@@ -499,10 +497,15 @@ void aspp_main(int port, int is_driver)
                     }
                     else
                     {
-                            if (sio_ofree(port) < TMP_LEN)
-                            detail->port_write_flag = 1;
+                          if (sio_ofree(port) < TMP_LEN)
+                            detail->port_write_flag = 1;						  
+
                     }
+#else
+#endif					
                 }
+#ifdef UART_BURN
+				
                 if (FD_ISSET(detail->fd_data[i], &wfds))
                 {
         			if (serial_data_buffered)
@@ -523,9 +526,11 @@ void aspp_main(int port, int is_driver)
                     	else
                         	detail->net_write_flag = 0;
 					}		
-                }				
+                }
+#endif				
             }
         }
+#ifdef UART_BURN
         if (FD_ISSET(detail->fd_port, &rfds))
         {
 #if 0
@@ -543,15 +548,15 @@ void aspp_main(int port, int is_driver)
                 tv.tv_usec = 5*1000L;
             }
         }
-
         if (FD_ISSET(detail->fd_port, &wfds))
         {
-        printf("Joy fd_port write ready\r\n");
             if (delimiter_e2s_len(port) > 0)
                 delimiter_write(port);
             else
                 detail->port_write_flag = 0;
-        }			
+        }
+#endif		
+		
     } /* End of main loop */
     delimiter_stop(port);
     portd_wait_empty(port, detail->fd_port, 3000);
@@ -605,7 +610,13 @@ int	aspp_sendfunc(int port, int fd_net, char *buf, int len)
     detail = (struct aspp_serial *) ptr->detail;
 
     realtty = (detail->backlog > 1)? 0 : 1;
+#ifdef UART_BURN
+#else
+nbytes = send(detail->fd_data[0], buf, len, 0);
+max_nbytes = MAX(nbytes, max_nbytes);
 
+return max_nbytes;
+#endif
 
     if (!realtty)
     {
@@ -982,7 +993,7 @@ int aspp_command(int port, int conn, char *buf, int len)
                 if (realtty)
                 {
                     sio_flush(port, n);
-                    delimiter_flush(port, FLUSH_TX);
+                    delimiter_flush(port, SIO_FLUSH_TX);
 
                     detail->flush_wait_time[conn] = sys_clock_ms() + val;
 
@@ -1441,7 +1452,7 @@ int aspp_open_serial(int port)
 
     sio_set_dtr(port, 0);             /* DTR off at init state */
     sio_set_rts(port, 0);             /* RTS off at init state */
-    sio_flush(port, FLUSH_ALL);
+    sio_flush(port, SIO_FLUSH_ALL);
 
     sio_fifo(port, Scf_getAsyncFifo(port));		/* FIFO */
 
@@ -1469,7 +1480,7 @@ void aspp_close_serial(int port)
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
 
-    sio_flush(port, FLUSH_ALL);
+    sio_flush(port, SIO_FLUSH_ALL);
     sio_flowctrl(port, F_NONE); /* Set None flow */
 
 #ifdef SUPPORT_CONNECT_GOESDOWN

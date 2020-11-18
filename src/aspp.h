@@ -22,6 +22,7 @@
 #else
 #define	ASPP_EXTERN extern
 #endif
+//#define UART_BURN //undef this will be tcp echo server (for TCP burn only)//
 void *aspp_start(void* arg);
 
 

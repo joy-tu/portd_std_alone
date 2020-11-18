@@ -289,7 +289,6 @@ sio_ret_t sio_ioctl(int port, sio_baud_t baud, sio_mode_t mode)
     if ((pinfo = getPort(port)) == NULL) {
         return SIO_BADPORT;
     }
-printf("Joy %s-%d\r\n", __func__, __LINE__);
     if (pinfo->fd <= 0) {
         return SIO_BADPORT;
     }
@@ -297,7 +296,6 @@ printf("Joy %s-%d\r\n", __func__, __LINE__);
     if (mode < 0 || mode > (BIT_8 | STOP_2 | P_SPC)) {
         return SIO_BADPARM;
     }
-printf("Joy %s-%d\r\n", __func__, __LINE__);
     /*
      * Get the current options for the port...
      */
@@ -320,7 +318,6 @@ printf("Joy %s-%d, baud=%d,%d\r\n", __func__, __LINE__,
     /*
      * Set the data bits
      */
-printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x03);
      
     switch (mode & 0x03)
     {
@@ -342,7 +339,6 @@ printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x03);
     /*
      * Set the stop bits
      */
-printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x04);     
     switch (mode & 0x04)
     {
         case STOP_1:
@@ -353,7 +349,6 @@ printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x04);
             uart_cfg.stop_bits = UART_CFG_STOP_BITS_2;
             break;
     }
-printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x38);     
     /*
      * Set the parity
      */
@@ -383,10 +378,8 @@ printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x38);
      */
     ret = uart_configure(pinfo->dev, &uart_cfg);
     if (ret != 0) {
-printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x38);       
         return SIO_OUTCONTROL;
     }
-printf("Joy %s-%d, mode=%x\r\n", __func__, __LINE__, mode & 0x38);       
     return SIO_OK;
 }
 
@@ -420,7 +413,6 @@ sio_ret_t sio_flowctrl(int port, sio_flowctrl_t ctrl)
      * Configure hardware/software flow control
      */
      ctrl = 0;
-printf("Joy %s-%d, flow=%x\r\n", __func__, __LINE__, ctrl);            
     if (ctrl & F_HW) {
         uart_cfg.flow_ctrl = UART_CFG_FLOW_CTRL_RTS_CTS;
     } else if (ctrl & F_SW) {
@@ -428,7 +420,6 @@ printf("Joy %s-%d, flow=%x\r\n", __func__, __LINE__, ctrl);
     } else {
         uart_cfg.flow_ctrl = UART_CFG_FLOW_CTRL_NONE;
     }
-printf("Joy %s-%d, flow=%x\r\n", __func__, __LINE__, ctrl);            
     /*
      * Set the new options for the port...
      */
@@ -436,7 +427,6 @@ printf("Joy %s-%d, flow=%x\r\n", __func__, __LINE__, ctrl);
     if (ret != 0) {
         return SIO_OUTCONTROL;
     }
-printf("Joy %s-%d, flow=%x\r\n", __func__, __LINE__, ctrl);            
 
     return SIO_OK;
 }
