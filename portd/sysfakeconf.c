@@ -1,5 +1,10 @@
 #include <header.h>
+#include <platform.h>
+#ifdef LINUX
 #include "sio.h"
+#elif defined(ZEPHYR)
+#include <sio/mx_sio.h>
+#endif
 #include "../config.h"
 
 int Scf_getMaxPorts(){
@@ -191,7 +196,7 @@ int Scf_getInactivityTime(int port)
 //      0 -> Success;
 //      <0 -> fail;
 //----------------------------------------------------------------
-int Scf_getTcpServer(int port, u_short *dataport, u_short *cmdport)
+int Scf_getTcpServer(int port, unsigned short *dataport, unsigned short *cmdport)
 {
 #if 1
 	*dataport = TCPSERV_BASE_PORT;

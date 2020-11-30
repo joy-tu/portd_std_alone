@@ -6,7 +6,10 @@
 
 #ifndef _PORTD_H_
 #define _PORTD_H_
-
+#ifdef LINUX
+#elif defined(ZEPHYR)
+#include <posix/pthread.h>
+#endif
 #define DISABLE_LINUX_SYN_BACKLOG 0
 
 #define DSPORTD_PID_FILE "/run/portd%02d.pid"
@@ -18,8 +21,11 @@
 #else
 #define TCP_LISTEN_BACKLOG  MAX_CONNECT
 #endif
+#ifdef LINUX
 #define DK_BUFFER_SIZE_S2E  1024
-
+#elif defined(ZEPHYR)
+#define DK_BUFFER_SIZE_S2E  4096
+#endif
 #define CFG_APPLICATION_DISABLED        0
 #define CFG_APPLICATION_DEVICE_CONTROL  0x100
 #define CFG_OPMODE_REALCOM              0

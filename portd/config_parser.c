@@ -5,6 +5,7 @@
 
 #define ENABLE  1
 #define DISABLE 0
+struct runtime_config Grun_conf;
 
 struct portd_conf config_item[] =
 {
@@ -33,7 +34,6 @@ struct portd_conf config_item[] =
 	{"",                         -1,  -1,         -1       , CONFIG_NONE},
 };
 
-struct runtime_config Grun_conf;
 int load_item(char *name, int *val)
 {
 	int i;

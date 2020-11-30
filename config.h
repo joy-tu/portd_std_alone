@@ -38,7 +38,7 @@ struct runtime_config {
 	int delimiter_2;
 	int delimiter_process;
 	int force_transmit;
-} Grun_conf;
+} ;
 
 extern struct runtime_config Grun_conf;
 extern char Gtty_name[128];

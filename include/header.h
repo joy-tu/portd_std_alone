@@ -7,9 +7,14 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include "platform.h"
+#ifdef LINUX
 #include <netinet/tcp.h>
 #include <sys/ioctl.h>
-
+#elif defined(ZEPHYR)
+#include <posix/netinet/tcp.h>
+#include <posix/sys/ioctl.h>
+#endif
 #ifndef MAX
 #define MAX(a,b) ((a > b) ? a : b)
 #endif

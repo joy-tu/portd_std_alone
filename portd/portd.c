@@ -13,11 +13,18 @@
 #endif
 
 #include <stdio.h>
+#include <platform.h>
+#ifdef LINUX
 #include <pthread.h>
-#include <header.h>
 #include <netinet/in.h>
-#include <portd.h>
 #include <sio.h>
+#elif defined(ZEPHYR)
+#include <posix/pthread.h>
+#include <posix/netinet/in.h>
+#include <sio/mx_sio.h>
+#endif
+#include <header.h>
+#include <portd.h>
 #include "aspp.h"
 
 struct port_data Gport;
@@ -28,8 +35,13 @@ static void portd(int port_idx);
 static void portd_exit(int port_idx);
 extern int delimiter_init(int port, int has_delimiter, int has_buffering);
 extern void delimiter_exit(int port);
-
-int main(int argc, char *argv[])
+#ifdef LINUX
+int main(int argc, char *argv[]) {
+	portd_start();
+	return 0;
+}
+#endif
+int portd_start(void)
 {
 	int port_idx=1;
 
@@ -103,11 +115,16 @@ static int portd_init(int port_idx)
 
     return 1;
 }
-
+#ifdef ZEPHYR
+#define PORTD_STACK_SIZE 4096 * 10 
+K_THREAD_STACK_DEFINE(portd_stack, PORTD_STACK_SIZE);
+#endif
 static void portd(int port_idx)
 {
     struct port_data *ptr;
-
+#ifdef ZEPHYR
+    pthread_attr_t portd_attr;
+#endif
     ptr = &Gport;
 
     ptr->thread_id = (pthread_t)NULL;
@@ -118,8 +135,15 @@ static void portd(int port_idx)
         {
             if (ptr->application == CFG_OPMODE_REALCOM) // RealCOM
             {
+#ifdef LINUX            
                 printf("Start port %d as RealCOM mode\n", port_idx);
 		  pthread_create(&ptr->thread_id, NULL, &aspp_start, (void *)port_idx);
+#elif defined(ZEPHYR)
+		 (void)pthread_attr_init(&portd_attr);
+		 (void)pthread_attr_setstack(&portd_attr, &portd_stack,
+				    PORTD_STACK_SIZE);
+		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start, (void *)port_idx);
+#endif		  
             }
             break;
         }
@@ -158,10 +182,10 @@ static void portd_exit(int port_idx)
     delimiter_exit(port_idx);
 }
 
-static int __tcp_info(int fd, int mode);
 #define TCP_INFO_MODE_GET_STATE     0
 #define TCP_INFO_MODE_GET_OQUEUE    1
-
+#ifdef LINUX
+static int __tcp_info(int fd, int mode);
 int tcp_oqueue(int fd)
 {
     return __tcp_info(fd, TCP_INFO_MODE_GET_OQUEUE);
@@ -275,7 +299,14 @@ static int __tcp_info(int fd, int mode)
     fclose(fp);
     return 0;
 }
-
+#elif defined(ZEPHYR)
+int tcp_state(int fd)
+{
+    uint32_t state;
+    net_tcp_state(fd, &state);
+    return state;
+}
+#endif
 void portd_wait_empty(int port, int fd_port, unsigned long timeout)
 {
     int     n, i;
@@ -316,5 +347,4 @@ void portd_setexitflag(int port, int flag)
     portd_terminate = flag;
 }
 
-#define PATCH_TCP_USER_TIMEOUT
 

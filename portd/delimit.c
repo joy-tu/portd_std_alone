@@ -15,11 +15,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <platform.h>
+#ifdef LINUX
 #include <arpa/inet.h>
+#include <sio.h>
+#elif defined(ZEPHYR)
+#include <posix/arpa/inet.h>
+#include <sio/mx_sio.h>
+#endif
 #include <header.h>
 #include <portd.h>
 #include <delimit.h>
-#include <sio.h>
 #include "aspp.h"
 
 #define DK_FORCE_TX_SIZE  DK_BUFFER_SIZE_S2E  /* force transmit if buffered data size exceeds this */

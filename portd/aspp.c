@@ -13,7 +13,18 @@
 #endif
 #include <header.h>
 #include <common.h>
+#include <platform.h>
+#ifdef LINUX
 #include <sio.h>
+#elif defined(ZEPHYR)
+#include <sio/mx_sio.h>
+#include <posix/sys/socket.h>
+#include <posix/sys/ioctl.h>
+#include <posix/sys/select.h>
+#include <sysapi.h>
+#include <net/socket.h>
+#include <net/socket_uart.h>
+#endif
 #include <portd.h>
 #include "aspp.h"
 #include <fcntl.h>
@@ -69,8 +80,13 @@ void *aspp_start(void* arg)
 
     aspp_open_serial(port);
     sio_close(port);
+#ifdef LINUX	
     sio_DTR(port, 0);		 	/* DTR off */
     sio_RTS(port, 0);			/* RTS off */
+#elif defined(ZEPHYR)
+    sio_set_dtr(port, 0);		 	/* DTR off */
+    sio_set_rts(port, 0);			/* RTS off */
+#endif
     while (1)
     {
         aspp_main(port, is_driver);
@@ -792,7 +808,11 @@ int aspp_command(int port, int conn, char *buf, int len)
                     else
                     {
                         setok = 1;
+#ifdef LINUX						
                         sio_baud(port, speed);
+#elif defined(ZEPHYR)
+                        sio_set_baud(port, speed);
+#endif
                     }
                 }
                 else
@@ -803,7 +823,11 @@ int aspp_command(int port, int conn, char *buf, int len)
             if (datalen == 2)
             {
                 if (realtty || (detail->ctrlflag & CTRLFLAG_ALLOWDRV))
+#ifdef LINUX						
                     sio_setxonxoff(port, tmp[0], tmp[1]);
+#elif defined(ZEPHYR)
+                    sio_set_xonxoff(port, tmp[0], tmp[1]);
+#endif
                 setok = 1;
             }
             break;
@@ -963,7 +987,11 @@ int aspp_command(int port, int conn, char *buf, int len)
                  * sio_actxon
                  */
                 if (realtty)
+#ifdef LINUX					
                     sio_setxon(port);
+#elif defined(ZEPHYR)
+                    sio_act_xon(port);
+#endif
                 setok = 1;
             }
             break;
@@ -975,7 +1003,11 @@ int aspp_command(int port, int conn, char *buf, int len)
                  * sio_actxoff
                  */
                 if (realtty)
+#ifdef LINUX										
                     sio_setxoff(port);
+#elif defined(ZEPHYR)
+                    sio_act_xoff(port);
+#endif
                 setok = 1;
             }
             break;
@@ -990,8 +1022,11 @@ int aspp_command(int port, int conn, char *buf, int len)
                 if (realtty)
                 {
                     sio_flush(port, n);
+#ifdef LINUX					
                     delimiter_flush(port, FLUSH_TX);
-
+#elif defined(ZEPHYR)
+                    delimiter_flush(port, SIO_FLUSH_TX);
+#endif
                     detail->flush_wait_time[conn] = sys_clock_ms() + val;
 
                     if (n != 1)
@@ -1268,8 +1303,13 @@ int aspp_accept_data(int port)
                 detail->notify_flag = 0;
                 memset(&(detail->notify_buf), '\0', 5);
                 detail->break_count = 0;
+#ifdef LINUX				
                 sio_DTR(port, 1);		 	/* DTR on */
                 sio_RTS(port, 1);			/* RTS on */
+#elif defined(ZEPHYR)
+                sio_set_dtr(port, 1);		 	/* DTR on */
+                sio_set_rts(port, 1);			/* RTS on */
+#endif
                 delimiter_start(port, detail->fd_port, detail->backlog, detail->fd_data, detail->data_sent, aspp_sendfunc, aspp_recvfunc, 1);
             }
 
@@ -1289,8 +1329,10 @@ int aspp_accept_data(int port)
             ioctl(detail->fd_data[i], FIONBIO, &on);
 
             /* set socket low-water to 2 */
+#ifdef LINUX							
             value = 2;
             setsockopt(detail->fd_data[i], SOL_SOCKET, SO_SNDLOWAT, &value, sizeof(value));
+#endif
 #if 0
             /* linksio */
             value = detail->fd_port;
@@ -1355,9 +1397,10 @@ int aspp_accept_cmd(int port)
             ioctl(detail->fd_cmd[i], FIONBIO, &on);
 
             /* set socket low-water to 2 */
+#ifdef LINUX							
             value = 2;
             setsockopt(detail->fd_cmd[i], SOL_SOCKET, SO_SNDLOWAT, &value, sizeof(value));
-
+#endif
             detail->cmd_connect_count++;
             find = 1;
         }
@@ -1411,7 +1454,29 @@ void aspp_close_cmd(int port, int index)
     detail->flag[index] &= ~(FLAG_CMD_UP|FLAG_SET_NOTIFY);	/* Albert.20120102: add FLAG_SET_NOTIFY */
     detail->fd_cmd[index] = -1;
 }
+#ifdef ZEPHYR
+/* remap flow control value from config to sio */
+int _sio_mapFlowCtrl(int flowctrl)
+{
+    int flowmode;
 
+    switch (flowctrl)
+    {
+        case 1:        /* RTS/CTS */
+            flowmode = F_HW;
+            break;
+        case 2:        /* XON/XOFF */
+            flowmode = F_SW;
+            break;
+        case 0:        /* None */
+        default:
+            flowmode = 0x00;
+            break;
+     }
+
+    return flowmode;
+}
+#endif
 int aspp_open_serial(int port)
 {
     int	baud, mode, flowctrl;
@@ -1426,11 +1491,15 @@ int aspp_open_serial(int port)
         printf("Fail to open serial port %d, please check if the serial port has been opened.\n", port);
         return;
     }
-
+#ifdef LINUX
     sio_DTR(port, 0);             /* DTR off at init state */
     sio_RTS(port, 0);             /* RTS off at init state */
     sio_flush(port, FLUSH_ALL);
-
+#elif defined(ZEPHYR)
+    sio_set_dtr(port, 0);             /* DTR off at init state */
+    sio_set_rts(port, 0);             /* RTS off at init state */
+    sio_flush(port, SIO_FLUSH_ALL);
+#endif
     sio_fifo(port, Scf_getAsyncFifo(port));		/* FIFO */
     Scf_getAsyncIoctl(port, &baud, &mode, &flowctrl);
     sio_ioctl(port, baud, mode);      /* Set baud rate, data bits, stop bits and parity */
@@ -1453,16 +1522,24 @@ void aspp_close_serial(int port)
 
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
-
+#ifdef LINUX
     sio_flush(port, FLUSH_ALL);
+#elif defined(ZEPHYR)
+    sio_flush(port, SIO_FLUSH_ALL);
+#endif
     sio_flowctrl(port, F_NONE); /* Set None flow */
 
 #ifdef SUPPORT_CONNECT_GOESDOWN
     {
         int rtsdtr;
         rtsdtr = Scf_getRtsDtrAction(port);
+#ifdef LINUX		
         sio_DTR(port, rtsdtr & 2);
         sio_RTS(port, rtsdtr & 1);
+#elif defined(ZEPHYR)
+        sio_set_dtr(port, rtsdtr & 2);
+        sio_set_rts(port, rtsdtr & 1);
+#endif
     }
 #endif // SUPPORT_CONNECT_GOESDOWN
     sio_close(port);
@@ -1490,7 +1567,11 @@ void aspp_update_lasttime(int port)
 int aspp_tcp_iqueue(int fd)
 {
     int bytes;
+#ifdef LINUX	
     ioctl(fd, FIONREAD, &bytes);
+#elif defined(ZEPHYR)
+    net_tcp_iqueue(fd, &bytes);
+#endif
     return bytes;
 }
 

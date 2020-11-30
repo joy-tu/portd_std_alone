@@ -16,14 +16,18 @@
 
 #ifndef _ASPP_H_
 #define _ASPP_H_
-
+#include "../include/platform.h"
+#ifdef LINUX
+#elif defined(ZEPHYR)
+#include <posix/sys/select.h>
+#endif
 
 #ifdef	_ASPP_C
 #define	ASPP_EXTERN
 #else
 #define	ASPP_EXTERN extern
 #endif
-#define UART_BURN //undef this will be tcp echo server (for TCP burn only)//
+//#define UART_BURN //undef this will be tcp echo server (for TCP burn only)//
 void *aspp_start(void* arg);
 
 
