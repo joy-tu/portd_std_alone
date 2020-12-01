@@ -29,8 +29,8 @@ struct data_keep_param
 	int		(*sendfunc)(int port, int fd_net, char *buf, int len);
 	int		(*recvfunc)(int port, int fd_net, char *buf, int len);
 
-	int		(*sio_read)(int port, char *buf, int len);
-	int		(*sio_write)(int port, char *buf, int len);
+	int		(*sio_read)(int port, char *buf, size_t  len);
+	int		(*sio_write)(int port, char *buf, size_t  len);
 
 	int		s2e_cflag;  	/* there is data to be checked */
 	int		s2e_ccnt;   	/* checked data count, reset when delimiter found or every DK_FORCE_TX_SIZE */

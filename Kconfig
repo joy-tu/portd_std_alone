@@ -1,0 +1,7 @@
+# Copyright (c) 2019 Antmicro Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+config PORTD
+	bool "Portd Module"
+	help
+	  This option enables the Portd Module.
