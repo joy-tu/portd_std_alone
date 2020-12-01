@@ -123,6 +123,8 @@ static int portd_init(int port_idx)
 #define PORTD_STACK_SIZE 4096 * 10 
 K_THREAD_STACK_DEFINE(portd_stack, PORTD_STACK_SIZE);
 #endif
+void *aspp_start_tcpecho(void *arg);
+
 static void portd(int port_idx)
 {
     struct port_data *ptr;
@@ -146,7 +148,7 @@ static void portd(int port_idx)
 		 (void)pthread_attr_init(&portd_attr);
 		 (void)pthread_attr_setstack(&portd_attr, &portd_stack,
 				    PORTD_STACK_SIZE);
-		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start, (void *)port_idx);
+		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start_tcpecho, (void *)port_idx);
 #endif		  
             }
             break;
