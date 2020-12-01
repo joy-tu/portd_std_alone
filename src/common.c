@@ -17,9 +17,6 @@
 #define SYS_HZ      100
 #define SYS_UNIT    (1000/SYS_HZ)
 
-
-static char macbuf[18];
-
 int64_t sys_clock_ms(void)
 {
 //    struct tms ts;

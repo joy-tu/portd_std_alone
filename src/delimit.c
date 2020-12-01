@@ -16,9 +16,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <posix/arpa/inet.h>
+#include <posix/sys/socket.h>
 #include <header.h>
 #include <portd.h>
 #include <delimit.h>
+#include <common.h>
 #include <sio/mx_sio.h>
 #include "aspp.h"
 
@@ -31,11 +33,10 @@ static fdkparam_t Gdktab=NULL;
 int delimiter_init(int port, int has_delimiter, int has_buffering)
 {
 	fdkparam_t	dp;
-	int  tout=0, mode, packlen;
-	unsigned char ch1, ch2;
-	unsigned int flag=0;
-    	int shmid;
-    	key_t key;
+//	int  tout=0, mode, packlen;
+//	unsigned char ch1, ch2;
+//	unsigned int flag=0;
+//    	int shmid;
 
 	Gdktab = (fdkparam_t) malloc( sizeof(dkparam) );
 	if( Gdktab == (fdkparam_t) NULL )
@@ -91,7 +92,7 @@ void delimiter_start(int port, int fd_port, int max_conns, int fd_net[], int dat
                      int raw_tcp)
 {
 	fdkparam_t	dp;
-	int iftype;
+//	int iftype;
 
 	dp = (fdkparam_t) Gdktab;
 	dp->fd_port = fd_port;
@@ -217,7 +218,7 @@ int	sendback(int port, int fd_net, char *buf, int len)
 
 	fdkparam_t	dp;
 	unsigned char	*p;
-	int n, n2, ofree;
+	int n, n2/*, ofree*/;
 
 	dp = (fdkparam_t) Gdktab;
 	p = dp->e2s_buf + dp->e2s_rndx;
@@ -296,16 +297,16 @@ int delimiter_write_1(int port)
 
 int delimiter_send(int port, int max, int strip)
 {
-    fdkparam_t      dp;
-    unsigned char   *p;
-    int	n, merged = 0;
-    dp = (fdkparam_t) Gdktab;
+	fdkparam_t      dp;
+	unsigned char   *p;
+	int	n, merged = 0;
+	dp = (fdkparam_t) Gdktab;
 
 	if(dp->sent_to_tcp_len > 0)
 		return 0;	/* data was sent to TCP buffer but TCP buffer is not yet cleared, don't process */
 
-    if (dp->s2e_len == 0)
-        return 0;
+	if (dp->s2e_len == 0)
+	    	return 0;
 
 	if(max > (dp->s2e_len - strip))	/* max = 0 when Strip Delimiter is satisfied */
 	{

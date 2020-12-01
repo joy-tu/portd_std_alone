@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 #include "debug.h"
 #include "../config.h"
 

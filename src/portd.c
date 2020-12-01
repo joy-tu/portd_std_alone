@@ -18,6 +18,9 @@
 #include <posix/netinet/in.h>
 #include <portd.h>
 #include <sio/mx_sio.h>
+#include <sysfakeconf.h>
+#include <common.h>
+#include <net/mx_net.h>
 #include "aspp.h"
 
 struct port_data Gport;
@@ -28,6 +31,7 @@ static void portd(int port_idx);
 static void portd_exit(int port_idx);
 extern int delimiter_init(int port, int has_delimiter, int has_buffering);
 extern void delimiter_exit(int port);
+int load_runtime_conf(int port);
 
 int portd_start(void)
 {
@@ -57,7 +61,7 @@ static int portd_init(int port_idx)
 {
     struct port_data *ptr;
     int val;
-    int ret;
+//    int ret;
 
     ptr = &Gport;
     ptr->port_idx = port_idx;

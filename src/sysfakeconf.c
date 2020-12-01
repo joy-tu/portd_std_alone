@@ -253,6 +253,8 @@ int Scf_getDataPacking(int port, int *flag, INT8U *ch1, INT8U *ch2, INT16U *tout
 	*tout = FORCE_TX;
 	*mode = (1 << DELIMPROC);
 	*packlen = PACKLEN;
+
+	return 0;
 }
 int Scf_getInactivityTimeMin(int port);
 int Scf_setInactivityTimeMin(int port, int tout);

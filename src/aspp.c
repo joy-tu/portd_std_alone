@@ -24,8 +24,11 @@
 #include <net/socket_uart.h>
 #include "aspp.h"
 #include <fcntl.h>
+#include <sysfakeconf.h>
 #include <debug.h>
 #include <stdio.h>
+#include <posix/sys/ioctl.h>
+#include <net/mx_net.h>
 
 #define TMP_LEN 	512
 aspp_socket_stat Gaspp_socket_stat[DCF_MAX_SERIAL_PORT][TCP_LISTEN_BACKLOG];
@@ -113,7 +116,7 @@ void aspp_open_data_listener(ASPP_SERIAL *detail)
 {
     int yes;
     struct sockaddr_in sin;
-    int port = Gport.port_idx;
+    //int port = Gport.port_idx;
 
     if (detail->fd_data_listen != -1)
         return;
@@ -154,7 +157,7 @@ void aspp_open_cmd_listener(ASPP_SERIAL *detail)
 {
     int yes=1;
     struct sockaddr_in sin;
-    int port = Gport.port_idx;
+//    int port = Gport.port_idx;
 
     if (detail->fd_cmd_listen != -1)
         return;
@@ -328,7 +331,7 @@ void aspp_main(int port, int is_driver)
     struct port_data *ptr;
     ASPP_SERIAL *detail;
     char cmdbuf[CMD_LEN];
-    int i, n, maxfd, realtty, ci, ret;
+    int i, n, maxfd, realtty, ret;
     unsigned long idletime;
     struct timeval tv;
     fd_set rfds, wfds;
@@ -854,11 +857,12 @@ int aspp_command(int port, int conn, char *buf, int len)
                 n = htons(*(unsigned short *)tmp);
                 if ((n >= 10) && (n <= 1000))
                 {
-                    if (realtty || (detail->ctrlflag & CTRLFLAG_ALLOWDRV))
+                    if (realtty || (detail->ctrlflag & CTRLFLAG_ALLOWDRV)) {
                         //sio_sendbreak(port, (int) n);
 						sio_break(port, 1);
 						usleep(n * 1000);
 						sio_break(port, 0);
+                    }			
                     setok = 1;
                 }
             }
@@ -1201,14 +1205,14 @@ int aspp_convert_flow(int cts, int rts, int stx, int srx)
 
 int	aspp_flush_data(int port, int fd_port, int fd_data, int mode)
 {
-    sio_flush(port, mode);		/* mode = 0 : FLUSH_RX */
-    /*      = 1 : FLUSH_TX */
-    /*      = 2 : FLUSH_ALL */
-    if (mode != 0)		/* Clean tcp iqueue */
-        aspp_tcp_flush_iqueue(port, fd_data);
+	sio_flush(port, mode);		/* mode = 0 : FLUSH_RX */
+	/*      = 1 : FLUSH_TX */
+	/*      = 2 : FLUSH_ALL */
+	if (mode != 0)		/* Clean tcp iqueue */
+		aspp_tcp_flush_iqueue(port, fd_data);
 
 	delimiter_flush(port, mode);
-    return 1;
+	return 1;
 }
 
 int	aspp_flush_reply(int realtty, char * buf, int fd_data)
@@ -1244,7 +1248,7 @@ int aspp_accept_data(int port)
     {
         if (((detail->flag[i] & FLAG_DATA_UP)== 0) && (detail->fd_data[i] <= 0))
         {
-            int value;
+//            int value;
 
             n = sizeof(struct sockaddr_in);
 
@@ -1288,9 +1292,9 @@ int aspp_accept_data(int port)
             /* serial tos */
 
             /* non-block */
-            on = 1;
-            ioctl(detail->fd_data[i], FIONBIO, &on);
-
+//            on = 1;
+//            ioctl(detail->fd_data[i], FIONBIO, &on);
+		fcntl(detail->fd_data[i], F_SETFL, O_NONBLOCK);
             /* set socket low-water to 2 */
 //            value = 2;
 //            setsockopt(detail->fd_data[i], SOL_SOCKET, SO_SNDLOWAT, &value, sizeof(value));
@@ -1334,7 +1338,7 @@ int aspp_accept_cmd(int port)
     {
         if (((detail->flag[i] & FLAG_CMD_UP)== 0) && (detail->fd_cmd[i] <= 0))
         {
-            int value;
+//            int value;
             n = sizeof(struct sockaddr_in);
 
             // check accept, if fail, return.
@@ -1354,8 +1358,9 @@ int aspp_accept_cmd(int port)
             on = 1;
             setsockopt(detail->fd_cmd[i], IPPROTO_TCP, TCP_NODELAY, (char *)&on, sizeof(on));
 
-            on = 1;
-            ioctl(detail->fd_cmd[i], FIONBIO, &on);
+//            on = 1;
+//            ioctl(detail->fd_cmd[i], FIONBIO, &on);
+		fcntl(detail->fd_data[i], F_SETFL, O_NONBLOCK);
 
             /* set socket low-water to 2 */
 //            value = 2;
@@ -1447,7 +1452,7 @@ int aspp_open_serial(int port)
     if ((detail->fd_port = sio_open(port)) < 0)
     {
         printf("Fail to open serial port %d, please check if the serial port has been opened.\n", port);
-        return;
+        return -1;
     }
 
     sio_set_dtr(port, 0);             /* DTR off at init state */
@@ -1547,7 +1552,7 @@ static int aspp_notify_data(int port, unsigned char* buf)
     int msr, hold, msr_delt;
     int error;
     int result=0;
-
+    
     struct port_data *ptr;
     ASPP_SERIAL *detail;
 
@@ -1557,7 +1562,7 @@ static int aspp_notify_data(int port, unsigned char* buf)
     if( (sys_clock_ms() - detail->notify_lastpoll) > 100)
     {
         msr = hold = result = msr_delt = 0;
-        sio_notify_status(port, &msr, &hold);
+        sio_notify_status(port, (sio_msr_t *)&msr, (sio_hold_t *)&hold);
 
         error = sio_notify_error(port);
 
