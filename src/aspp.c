@@ -36,6 +36,84 @@ extern struct port_data Gport;
 
 static int aspp_notify_data(int port, unsigned char* buf);
 
+#define PORT 4001  // the port users will be connecting to
+
+void tcpsecho(int tcpport)
+{
+	int finish=0;
+	int listen_fd, data_fd;
+	struct sockaddr_in sin;
+	int maxfd, nbytes, n;
+	fd_set 	rfds;
+	unsigned char buf[1460];
+	unsigned long recvnum, sendnum;
+        int on;
+
+	while ( (listen_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0 )
+		sleep(1);
+
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(tcpport);
+	sin.sin_addr.s_addr = INADDR_ANY;	/* use my IP address */
+	//sin.sin_len = sizeof(sin);
+	n = bind(listen_fd, (struct sockaddr *)&sin, sizeof(sin));		
+	printf("tcpsecho(%d) bind()=%d, errno=%d\r\n", tcpport, n, errno);
+
+	n = listen(listen_fd, 1);
+	printf("tcpsecho(%d) listen()=%d, errno=%d\r\n", tcpport, listen_fd, errno);
+
+	on=1;
+	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+
+	while( 1 )
+	{
+		finish = 0;
+
+		n = sizeof(struct sockaddr_in);	
+		data_fd = accept(listen_fd, (struct sockaddr *)&sin, (socklen_t*)&n);
+		printf("tcpsecho(%d) accept()=%d\r\n", tcpport, data_fd);
+
+		maxfd = data_fd;
+		sendnum = recvnum = 0;
+
+		while( !finish )
+		{	
+			FD_ZERO(&rfds);
+			FD_SET(data_fd, &rfds);
+			if( select(maxfd+1, &rfds, NULL, NULL, NULL) <= 0 )
+
+			{
+				continue;
+			}
+
+			if( FD_ISSET(data_fd, &rfds) )
+			{
+				if( (nbytes = recv(data_fd, buf, sizeof(buf), 0)) <= 0 ) 
+				{
+					//shutdown(listen_fd, 2);
+					//close(listen_fd);
+					shutdown(data_fd, 2);
+					close(data_fd);
+					finish = 1;
+					printf("tcpsecho(%d) finish\r\n", tcpport);
+				}
+				else
+				{
+					recvnum += nbytes;
+					nbytes = send(data_fd, buf, nbytes, 0);
+					sendnum += nbytes;
+					
+				}
+			}
+		}
+	}
+}
+void *aspp_start_tcpecho(void *arg)
+{
+	tcpsecho(PORT);
+	return NULL;
+}
 void *aspp_start(void* arg)
 {
     struct port_data *ptr;

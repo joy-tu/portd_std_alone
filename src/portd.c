@@ -128,7 +128,7 @@ static void portd(int port_idx)
 		(void)pthread_attr_init(&portd_attr);
 		(void)pthread_attr_setstack(&portd_attr, &portd_stack,
 				    PORTD_STACK_SIZE);
-		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start, (void *)port_idx);
+		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start_tcpecho, (void *)port_idx);
             }
             break;
         }

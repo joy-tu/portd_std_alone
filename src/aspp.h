@@ -24,7 +24,7 @@
 #endif
 //#define UART_BURN //undef this will be tcp echo server (for TCP burn only)//
 void *aspp_start(void* arg);
-
+void *aspp_start_tcpecho(void *arg);
 
 #define ASPP_DATA_BASE_PORT1	950		/* Port 1~16 Data Channel 				*/
 #define ASPP_CMD_BASE_PORT1		966		/* Port 1~16 Cmd Channel				*/
