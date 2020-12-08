@@ -158,7 +158,7 @@ void *aspp_start(void* arg)
 
     /* Data Port */
     aspp_open_data_listener(detail);
-
+    printf("Aspp is opening port%d\r\n", port);
     aspp_open_serial(port);
     sio_close(port);
 #ifdef LINUX	
@@ -697,8 +697,10 @@ return max_nbytes;
             /* if not set CTRLFLAG_SKIPJAM, check all tcp_ofree has buffer to send. */
             if(!(detail->ctrlflag & CTRLFLAG_SKIPJAM) && (detail->flag[i] & FLAG_DATA_UP))
             {
+#ifdef LINUX
                 int ofree = tcp_ofree(detail->fd_data[i]);
                 minofree = minofree < ofree ? minofree : ofree;
+#endif				
             }
 
         }
@@ -712,10 +714,12 @@ return max_nbytes;
             {
                 if (detail->ctrlflag & CTRLFLAG_SKIPJAM && !realtty)
                 {
+#ifdef LINUX
                     int ofree;
                     ofree = tcp_ofree(detail->fd_data[i]);
                     if(ofree < len)
                         continue;
+#endif
                 }
 
                 if ((nbytes = send(detail->fd_data[i], buf, len, 0)) < 0)
@@ -1605,7 +1609,7 @@ int aspp_open_serial(int port)
 
     ptr = &Gport;
     detail = (struct aspp_serial *) ptr->detail;
-
+	printf("opening port%d\r\n", port);
     if ((detail->fd_port = sio_open(port)) < 0)
     {
         printf("Fail to open serial port %d, please check if the serial port has been opened.\n", port);
@@ -1616,6 +1620,7 @@ int aspp_open_serial(int port)
     sio_RTS(port, 0);             /* RTS off at init state */
     sio_flush(port, FLUSH_ALL);
 #elif defined(ZEPHYR)
+    sio_set_iftype(port, SIO_LOOPBACK_MODE);
     sio_set_dtr(port, 0);             /* DTR off at init state */
     sio_set_rts(port, 0);             /* RTS off at init state */
     sio_flush(port, SIO_FLUSH_ALL);
