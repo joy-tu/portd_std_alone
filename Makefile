@@ -65,6 +65,7 @@ endif
 MODEL = ${shell find ./dep | grep $(DC_FW_MODEL)}
 
 all:
+	rm -f src/burnin.c
 	make clean
 	@mkdir -p dep
 	@if [ "$(MODEL)" == "" ]; then \
