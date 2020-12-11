@@ -697,10 +697,9 @@ return max_nbytes;
             /* if not set CTRLFLAG_SKIPJAM, check all tcp_ofree has buffer to send. */
             if(!(detail->ctrlflag & CTRLFLAG_SKIPJAM) && (detail->flag[i] & FLAG_DATA_UP))
             {
-#ifdef LINUX
                 int ofree = tcp_ofree(detail->fd_data[i]);
+				
                 minofree = minofree < ofree ? minofree : ofree;
-#endif				
             }
 
         }
@@ -714,12 +713,11 @@ return max_nbytes;
             {
                 if (detail->ctrlflag & CTRLFLAG_SKIPJAM && !realtty)
                 {
-#ifdef LINUX
                     int ofree;
                     ofree = tcp_ofree(detail->fd_data[i]);
+					
                     if(ofree < len)
                         continue;
-#endif
                 }
 
                 if ((nbytes = send(detail->fd_data[i], buf, len, 0)) < 0)

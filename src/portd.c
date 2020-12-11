@@ -148,7 +148,7 @@ static void portd(int port_idx)
 		 (void)pthread_attr_init(&portd_attr);
 		 (void)pthread_attr_setstack(&portd_attr, &portd_stack,
 				    PORTD_STACK_SIZE);
-		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start_tcpecho, (void *)port_idx);
+		  pthread_create(&ptr->thread_id, &portd_attr, &aspp_start, (void *)port_idx);
 #endif		  
             }
             break;
@@ -196,7 +196,6 @@ int tcp_oqueue(int fd)
 {
     return __tcp_info(fd, TCP_INFO_MODE_GET_OQUEUE);
 }
-
 int tcp_ofree(int fd)
 {
 #if 1
@@ -207,7 +206,6 @@ int tcp_ofree(int fd)
     return 4096;
 #endif
 }
-
 /**
  * \brief
  * \param fd
@@ -312,7 +310,27 @@ int tcp_state(int fd)
     net_tcp_state(fd, &state);
     return state;
 }
+int tcp_ofree(int fd)
+{
+#if 1
+    int txq;
+    
+    net_tcp_oqueue(fd, &txq);
+
+    return DCF_SOCK_BUF - txq;
+#else
+    return 4096;
 #endif
+}
+int tcp_oqueue(int fd)
+{
+    int txq;
+
+    net_tcp_oqueue(fd, &txq);
+
+    return txq;
+}
+#endif /* #ifdef LINUX */
 void portd_wait_empty(int port, int fd_port, unsigned long timeout)
 {
     int     n, i;
