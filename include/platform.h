@@ -6,7 +6,7 @@
 
 #ifndef _PLATFORM_H
 #define _PLATFORM_H
-#define ZEPHYR
+#define LINUX
 
 #endif /* _PLATFORM_H */
 

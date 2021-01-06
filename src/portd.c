@@ -42,10 +42,48 @@ int load_runtime_conf(int port);
 #ifdef LINUX
 int main(int argc, char *argv[]) {
 	portd_start();
+	while (1)
+		sleep(1);
 	return 0;
 }
 #endif
+#define MAXP 1
+#define PORTD_AS_THREAD
+#ifdef PORTD_AS_THREAD
+void *do_portd_start(void *arg)
+{
+	int port_idx;
+	port_idx = (int) arg + 1;
+	printf("%d,%d\r\n", port_idx, (int) arg);
+	load_runtime_conf(port_idx);
+	if (port_idx <= 0) {
+		printf("Invalid port specified!\n");
+		return -1;
+    	}
+
+	while( 1 ) {
+		if (!portd_init(port_idx)) {
+			sleep(1);    /* sleep 1 second */
+			continue;
+		}
+		portd_terminate = 0;
+		portd(port_idx);
+
+		portd_exit(port_idx);
+	}
+
+	return 0;	
+}
 int portd_start(void)
+{
+	int i;
+	pthread_t   thread_id;
+
+	for (i = 0; i < MAXP; i++)
+		pthread_create(&thread_id, NULL, &do_portd_start, (void *)i);
+}
+#else
+int do_portd_start(void)
 {
 	int port_idx=1;
 
@@ -68,6 +106,7 @@ int portd_start(void)
 
 	return 0;
 }
+#endif
 
 static int portd_init(int port_idx)
 {
